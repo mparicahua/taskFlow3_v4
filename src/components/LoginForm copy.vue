@@ -159,12 +159,10 @@
     </div>
   </div>
 </template>
+
 <script setup>
 import { ref, reactive } from 'vue'
-
-// Emits
 const emit = defineEmits(['switchToRegister', 'loginSuccess'])
-
 const form = reactive({
   email: '',
   password: '',
@@ -178,22 +176,10 @@ const errors = reactive({
 
 const showPassword = ref(false)
 const isLoading = ref(false)
-
 const validateForm = () => {
-  errors.email = ''
-  errors.password = ''
   
-  let isValid = true
-
-  if (!form.password) {
-    errors.password = 'La contraseña es requerida'
-    isValid = false
-  } else if (form.password.length < 6) {
-    errors.password = 'La contraseña debe tener al menos 6 caracteres'
-    isValid = false
-  }
   
-  return isValid
+  return true;
 }
 
 const handleLogin = async () => {
@@ -202,40 +188,24 @@ const handleLogin = async () => {
   isLoading.value = true
   
   try {
-    const response = await fetch('http://localhost:3000/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: form.email,
-        password: form.password
-      })
+    
+    console.log('Login:', {
+      email: form.email,
+      password: form.password,
+      rememberMe: form.rememberMe
     })
     
-    const data = await response.json()
-
-    console.log(data)
-
-    if (data.success) {
-      console.log(data.user)
-      emit('loginSuccess', data.user)
-    } else {
-      console.log('Login fallido:', data.message)
-    }
-    
   } catch (error) {
-    console.error('Error de conexión:', error)
+    console.error('Error en login:', error)
   } finally {
     isLoading.value = false
   }
 }
 const loginWithGoogle = () => {
-  console.log('Login con Google ')
+  console.log('Login con Google')
 }
-
 const goToDashboard = () => {
-  console.log('Botón dashboard clickeado')
+  console.log('dashboard')
   emit('loginSuccess', {
     email: 'usuario@test.com',
     name: 'Usuario Demo'
