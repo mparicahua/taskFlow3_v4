@@ -1,26 +1,44 @@
 <template>
-  <div id="app" class="h-screen">
+  <div>
+    <!-- Vista de Autenticación -->
     <AuthContainer 
-      v-if="currentPage === 'auth'"
-      @login-success="goToDashboard"
+      v-if="!userStore.isLoggedIn"
+      @login-success="handleLoginSuccess"
+      @register-success="handleRegisterSuccess"
     />
+    
+    <!-- Dashboard -->
     <Dashboard 
-      v-if="currentPage === 'dashboard'"
-      @logout="goToAuth"
+      v-else
+      @logout="handleLogout"
     />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted } from 'vue'
+import { useUserStore } from './stores/userStore'
 import AuthContainer from './components/AuthContainer.vue'
 import Dashboard from './components/Dashboard.vue'
-const currentPage = ref('auth') // 'auth' | 'dashboard'
 
-const goToDashboard = () => {
-  currentPage.value = 'dashboard'
+const userStore = useUserStore()
+
+onMounted(() => {
+  userStore.restoreSession()
+})
+
+// Manejar login exitoso
+const handleLoginSuccess = (userData) => {
+  userStore.login(userData)
 }
-const goToAuth = () => {
-  currentPage.value = 'auth'
+
+// Manejar registro exitoso
+const handleRegisterSuccess = (userData) => {
+  userStore.login(userData)
+}
+
+// Manejar logout
+const handleLogout = () => {
+  userStore.logout()
 }
 </script>

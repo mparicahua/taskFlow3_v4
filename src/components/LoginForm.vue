@@ -1,5 +1,6 @@
 <template>
   <div class="min-h-screen flex">
+    <!-- Columna izquierda: Banner (Oculta en móvil) -->
     <div class="hidden lg:flex lg:w-1/2 bg-blue-600 relative">
       <div class="flex items-center justify-center w-full">
         <div class="text-center">
@@ -14,8 +15,11 @@
         </div>
       </div>
     </div>
+
+    <!-- Columna derecha: Formulario -->
     <div class="w-full lg:w-1/2 bg-slate-900 flex items-center justify-center p-8">
       <div class="max-w-md w-full space-y-8">
+        <!-- Botón de configuración -->
         <div class="flex justify-end">
           <button class="p-2 text-gray-400 hover:text-gray-300 transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,6 +28,8 @@
             </svg>
           </button>
         </div>
+
+        <!-- Título -->
         <div class="text-center">
           <h2 class="text-3xl font-bold text-white mb-2">
             Bienvenido de vuelta
@@ -38,7 +44,9 @@
             </button>
           </p>
         </div>
+
         <div class="space-y-6">
+          <!-- Botón Google -->
           <button
             @click="loginWithGoogle"
             class="w-full flex justify-center items-center px-4 py-3 border border-gray-600 rounded-lg text-sm font-medium text-gray-300 bg-gray-800/50 hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
@@ -51,6 +59,8 @@
             </svg>
             Continuar con Google
           </button>
+
+          <!-- Divider -->
           <div class="relative">
             <div class="absolute inset-0 flex items-center">
               <div class="w-full border-t border-gray-600"></div>
@@ -59,7 +69,10 @@
               <span class="px-2 bg-slate-900 text-gray-400">O continúa con</span>
             </div>
           </div>
+
+          <!-- Formulario -->
           <form @submit.prevent="handleLogin" class="space-y-6">
+            <!-- Email -->
             <div>
               <label for="email" class="block text-sm font-medium text-gray-300 mb-2">
                 Email
@@ -75,6 +88,8 @@
                 >
               </div>
             </div>
+
+            <!-- Password -->
             <div>
               <label for="password" class="block text-sm font-medium text-gray-300 mb-2">
                 Contraseña
@@ -102,7 +117,10 @@
                   </svg>
                 </button>
               </div>
+              <p v-if="errors.password" class="mt-1 text-sm text-red-400">{{ errors.password }}</p>
             </div>
+
+            <!-- Remember me y Forgot password -->
             <div class="flex items-center justify-between">
               <div class="flex items-center">
                 <input
@@ -121,6 +139,13 @@
                 </a>
               </div>
             </div>
+
+            <!-- Mensaje de error general -->
+            <div v-if="loginError" class="bg-red-900/30 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm">
+              {{ loginError }}
+            </div>
+
+            <!-- Botón de login -->
             <div>
               <button
                 type="submit"
@@ -136,6 +161,8 @@
                 {{ isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
               </button>
             </div>
+
+            <!-- Botón Dashboard (temporal) -->
             <div>
               <button
                 type="button"
@@ -145,6 +172,8 @@
                 Dashboard
               </button>
             </div>
+
+            <!-- Términos y condiciones -->
             <div class="text-center">
               <p class="text-xs text-gray-400">
                 Al continuar, aceptas nuestros 
@@ -159,10 +188,10 @@
     </div>
   </div>
 </template>
+
 <script setup>
 import { ref, reactive } from 'vue'
 
-// Emits
 const emit = defineEmits(['switchToRegister', 'loginSuccess'])
 
 const form = reactive({
@@ -178,10 +207,12 @@ const errors = reactive({
 
 const showPassword = ref(false)
 const isLoading = ref(false)
+const loginError = ref('')
 
 const validateForm = () => {
   errors.email = ''
   errors.password = ''
+  loginError.value = ''
   
   let isValid = true
 
@@ -200,6 +231,7 @@ const handleLogin = async () => {
   if (!validateForm()) return
   
   isLoading.value = true
+  loginError.value = ''
   
   try {
     const response = await fetch('http://localhost:3000/api/auth/login', {
@@ -215,30 +247,31 @@ const handleLogin = async () => {
     
     const data = await response.json()
 
-    console.log(data)
-
     if (data.success) {
-      console.log(data.user)
       emit('loginSuccess', data.user)
     } else {
-      console.log('Login fallido:', data.message)
+      loginError.value = data.message || 'Error al iniciar sesión'
     }
     
   } catch (error) {
     console.error('Error de conexión:', error)
+    loginError.value = 'Error de conexión con el servidor'
   } finally {
     isLoading.value = false
   }
 }
+
 const loginWithGoogle = () => {
-  console.log('Login con Google ')
+  console.log('Login con Google')
 }
 
 const goToDashboard = () => {
-  console.log('Botón dashboard clickeado')
   emit('loginSuccess', {
+    id: 1,
     email: 'usuario@test.com',
-    name: 'Usuario Demo'
+    nombre: 'Usuario Demo',
+    iniciales: 'UD',
+    color_avatar: '#3B82F6'
   })
 }
 </script>
