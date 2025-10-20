@@ -67,13 +67,14 @@ La aplicación estará disponible en `http://localhost:5173`
 | `VITE_API_URL` | URL del backend API | `http://localhost:3000` |
 | `PORT` | Puerto del servidor (producción) | `4000` |
 
-## Funcionalidades
+##  Funcionalidades Principales
 
-### Autenticación
-- Login con email y contraseña
-- Registro de nuevos usuarios
-- Persistencia de sesión
-- Protección de rutas
+- **Autenticación:** Login/registro con persistencia de sesión y protección de rutas
+- **Gestión de Proyectos:** CRUD completo con vista de equipo y roles
+- **Colaboración:** Sistema de miembros con roles (Propietario, Editor, Visualizador)
+- **Tablero Kanban:** Organización de tareas con prioridades, fechas y etiquetas
+- **Seguridad:** Validación de formularios y guards de navegación
+
 
 ##  Despliegue
 
