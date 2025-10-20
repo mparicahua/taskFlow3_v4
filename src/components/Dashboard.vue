@@ -85,16 +85,29 @@
           >
             <div class="flex items-start justify-between mb-4">
               <div class="flex-1">
-                <h3 class="text-lg font-semibold text-white mb-2">{{ proyecto.nombre }}</h3>
+                <h3 
+                  @click="abrirProyecto(proyecto)"
+                  class="text-lg font-semibold text-white mb-2 hover:text-blue-400 transition-colors cursor-pointer"
+                >
+                  {{ proyecto.nombre }}
+                </h3>
                 <p class="text-sm text-gray-400 line-clamp-2">{{ proyecto.descripcion || 'Sin descripción' }}</p>
               </div>
               <div class="flex space-x-2 ml-4">
-                <button @click="abrirModalEditar(proyecto)" class="p-1 text-gray-400 hover:text-blue-400 transition-colors">
+                <button 
+                  @click="abrirModalEditar(proyecto)" 
+                  class="p-1 text-gray-400 hover:text-blue-400 transition-colors"
+                  title="Editar proyecto"
+                >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                 </button>
-                <button @click="confirmarEliminar(proyecto)" class="p-1 text-gray-400 hover:text-red-400 transition-colors">
+                <button 
+                  @click="confirmarEliminar(proyecto)" 
+                  class="p-1 text-gray-400 hover:text-red-400 transition-colors"
+                  title="Eliminar proyecto"
+                >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
@@ -103,8 +116,8 @@
             </div>
             <div class="mb-4">
               <div class="flex items-center text-sm text-gray-400">
-                <span class="mr-4">0 todos</span>
-                <span class="text-green-400">0 completados</span>
+                <span class="mr-4">5 todos</span>
+                <span class="text-green-400">3 completados</span>
               </div>
             </div>
             <div class="flex -space-x-2">
@@ -318,12 +331,12 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
 
-const emit = defineEmits(['logout'])
+const router = useRouter()
 const userStore = useUserStore()
 
 // Estado
@@ -361,11 +374,11 @@ onMounted(() => {
   cargarRoles()
 })
 
-
+// Cargar datos
 const cargarProyectos = async () => {
   loading.value = true
   try {
-    const response = await fetch(`http://localhost:3000/api/projects/user/${userStore.currentUser.id}`)
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/projects/user/${userStore.currentUser.id}`)
     const data = await response.json()
     if (data.success) {
       proyectos.value = data.data
@@ -379,7 +392,7 @@ const cargarProyectos = async () => {
 
 const cargarUsuarios = async () => {
   try {
-    const response = await fetch('http://localhost:3000/api/users')
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users`)
     const data = await response.json()
     if (data.success) {
       usuarios.value = data.data
@@ -391,7 +404,7 @@ const cargarUsuarios = async () => {
 
 const cargarRoles = async () => {
   try {
-    const response = await fetch('http://localhost:3000/api/users/roles')
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/roles`)
     const data = await response.json()
     if (data.success) {
       roles.value = data.data
@@ -408,7 +421,7 @@ const cargarUsuariosDisponibles = async (proyectoId = null) => {
     usuariosDisponibles.value = usuariosDisponibles.value.filter(u => !idsSeleccionados.includes(u.id))
   } else {
     try {
-      const response = await fetch(`http://localhost:3000/api/users/disponibles/${proyectoId}`)
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/disponibles/${proyectoId}`)
       const data = await response.json()
       if (data.success) {
         usuariosDisponibles.value = data.data
@@ -445,11 +458,11 @@ const abrirModalEditar = async (proyecto) => {
 
 const toggleColaborativo = async () => {
   const nuevoValor = !formularioProyecto.es_colaborativo
-
+  
   if (modoEdicion.value && colaborativoAnterior.value && !nuevoValor) {
     if (confirm('¿Desactivar proyecto colaborativo? Esto eliminará a todos los miembros excepto al propietario.')) {
       try {
-        const response = await fetch(`http://localhost:3000/api/projects/${proyectoEditando.value.id}/miembros`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/projects/${proyectoEditando.value.id}/miembros`, {
           method: 'DELETE'
         })
         
@@ -469,17 +482,17 @@ const toggleColaborativo = async () => {
         return
       }
     } else {
-      return 
+      return
     }
   } else {
     formularioProyecto.es_colaborativo = nuevoValor
   }
   
-
   if (nuevoValor && !modoEdicion.value) {
     cargarUsuariosDisponibles()
   }
 }
+
 
 const agregarMiembroLista = () => {
   if (!nuevoMiembro.usuario_id || !nuevoMiembro.rol_id) return
@@ -496,6 +509,7 @@ const agregarMiembroLista = () => {
       usuario_id: usuario.id,
       rol_id: rol.id
     })
+    
     usuariosDisponibles.value = usuariosDisponibles.value.filter(u => u.id !== usuario.id)
     nuevoMiembro.usuario_id = ''
     nuevoMiembro.rol_id = ''
@@ -506,7 +520,7 @@ const agregarMiembroProyecto = async () => {
   if (!proyectoEditando.value) return
   
   try {
-    const response = await fetch(`http://localhost:3000/api/projects/${proyectoEditando.value.id}/miembros`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/projects/${proyectoEditando.value.id}/miembros`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -537,7 +551,7 @@ const eliminarMiembro = async (usuarioId) => {
   
   try {
     const response = await fetch(
-      `http://localhost:3000/api/projects/${proyectoEditando.value.id}/miembros/${usuarioId}`,
+      `${import.meta.env.VITE_API_URL}/api/projects/${proyectoEditando.value.id}/miembros/${usuarioId}`,
       { method: 'DELETE' }
     )
     
@@ -558,7 +572,7 @@ const eliminarMiembro = async (usuarioId) => {
 const removerMiembroSeleccionado = (index) => {
   const miembro = miembrosSeleccionados.value[index]
   miembrosSeleccionados.value.splice(index, 1)
-
+  
   if (!usuariosDisponibles.value.find(u => u.id === miembro.usuario.id)) {
     usuariosDisponibles.value.push(miembro.usuario)
   }
@@ -569,7 +583,7 @@ const crearProyecto = async () => {
   errorModal.value = ''
   
   try {
-    const response = await fetch('http://localhost:3000/api/projects', {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/projects`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -584,10 +598,10 @@ const crearProyecto = async () => {
     
     if (data.success) {
       const nuevoProyecto = data.data
-
+      
       if (formularioProyecto.es_colaborativo && miembrosSeleccionados.value.length > 0) {
         for (const miembro of miembrosSeleccionados.value) {
-          await fetch(`http://localhost:3000/api/projects/${nuevoProyecto.id}/miembros`, {
+          await fetch(`${import.meta.env.VITE_API_URL}/api/projects/${nuevoProyecto.id}/miembros`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -616,7 +630,7 @@ const editarProyecto = async () => {
   errorModal.value = ''
   
   try {
-    const response = await fetch(`http://localhost:3000/api/projects/${proyectoEditando.value.id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/projects/${proyectoEditando.value.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -649,7 +663,7 @@ const confirmarEliminar = async (proyecto) => {
   }
   
   try {
-    const response = await fetch(`http://localhost:3000/api/projects/${proyecto.id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/projects/${proyecto.id}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -688,7 +702,12 @@ const closeModal = () => {
 
 const handleLogout = () => {
   if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-    emit('logout')
+    userStore.logout()
+    router.push('/login')
   }
+}
+
+const abrirProyecto = (proyecto) => {
+  router.push(`/proyecto/${proyecto.id}`)
 }
 </script>

@@ -9,17 +9,9 @@ export const useUserStore = defineStore('user', {
   getters: {
 
     currentUser: (state) => state.user,
-    
-
     isLoggedIn: (state) => state.isAuthenticated,
-    
-
     userInitials: (state) => state.user?.iniciales || '',
-    
-
     userName: (state) => state.user?.nombre || '',
-    
-
     userColor: (state) => state.user?.color_avatar || '#6B7280'
   },
 
@@ -38,7 +30,6 @@ export const useUserStore = defineStore('user', {
       this.user = null
       this.isAuthenticated = false
       
-      // Limpiar localStorage
       localStorage.removeItem('user')
       localStorage.removeItem('isAuthenticated')
     },

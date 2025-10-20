@@ -2,7 +2,7 @@
     <div class="min-h-screen flex">
         <div class="w-full lg:w-1/2 bg-slate-900 flex items-center justify-center p-8">
             <div class="max-w-md w-full space-y-8">
-                <!-- Header con botón de tema -->
+
                 <div class="flex justify-end">
                     <button class="p-2 text-gray-400 hover:text-gray-300 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
