@@ -1,6 +1,31 @@
-# taskFlow3_v4
+# TaskFlow3
 
-This template should help get you started developing with Vue 3 in Vite.
+Sistema de gestión de proyectos y tareas colaborativo desarrollado con Vue 3 y Node.js.
+
+## Características
+
+-  **Sistema de autenticación** completo (login/registro)
+-  **Dashboard de proyectos** con vista de tarjetas
+-  **Proyectos colaborativos** con gestión de miembros y roles
+-  **Tablero Kanban** para organizar tareas
+-  **Interfaz moderna** con Tailwind CSS
+-  **Persistencia de sesión** con localStorage
+-  **Estado global** con Pinia
+
+##  Tecnologías
+
+### Frontend
+- **Vue 3** - Framework progresivo de JavaScript
+- **Vue Router** - Enrutamiento oficial de Vue
+- **Pinia** - Gestión de estado
+- **Tailwind CSS 4** - Framework de CSS utility-first
+- **Vite** - Build tool ultra-rápido
+
+### Backend (Requerido)
+- API REST compatible (Node.js/Express recomendado)
+- Base de datos SQL o NoSQL
+
+
 
 ## Recommended IDE Setup
 
@@ -10,20 +35,27 @@ This template should help get you started developing with Vue 3 in Vite.
 
 See [Vite Configuration Reference](https://vite.dev/config/).
 
-## Project Setup
+##  Instalación
 
-```sh
+### 1. Clonar el repositorio
+```bash
+git clone <url-del-repositorio>
+cd taskFlow3_v4
+```
+
+### 2. Instalar dependencias
+```bash
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### 3. Configurar variables de entorno
+Crea un archivo `.env` en la raíz del proyecto:
+```env
+VITE_API_URL=http://localhost:3000
+```
 
-```sh
+### 4. Iniciar el servidor de desarrollo
+```bash
 npm run dev
 ```
-
-### Compile and Minify for Production
-
-```sh
-npm run build
-```
+La aplicación estará disponible en `http://localhost:5173`
