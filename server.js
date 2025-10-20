@@ -8,7 +8,6 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Middleware para servir archivos estáticos
 app.use(express.static(join(__dirname, 'dist')));
 
 // Health check (opcional pero útil para Railway)
@@ -19,7 +18,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// SPA Fallback - Con Express 4 funciona con '*'
 app.get('*', (req, res) => {
   res.sendFile(join(__dirname, 'dist', 'index.html'));
 });
