@@ -59,3 +59,34 @@ VITE_API_URL=http://localhost:3000
 npm run dev
 ```
 La aplicación estará disponible en `http://localhost:5173`
+
+## 🌐 Variables de Entorno
+
+| Variable | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `VITE_API_URL` | URL del backend API | `http://localhost:3000` |
+| `PORT` | Puerto del servidor (producción) | `4000` |
+
+## Funcionalidades
+
+### Autenticación
+- Login con email y contraseña
+- Registro de nuevos usuarios
+- Persistencia de sesión
+- Protección de rutas
+
+##  Despliegue
+
+### Build de Producción
+```bash
+npm run build
+```
+
+Los archivos compilados se generarán en la carpeta `dist/`
+
+### Servidor Express
+El proyecto incluye un servidor Express (`server.js`) para servir la aplicación en producción:
+
+```bash
+npm start
+```
