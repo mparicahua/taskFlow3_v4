@@ -162,12 +162,7 @@
               </button>
             </div>
 
-            <div>
-              <button type="button" @click="goToDashboard"
-                class="w-full py-3 px-4 text-sm font-medium rounded-lg text-gray-300 bg-gray-800 hover:bg-gray-700 border border-gray-600 transition-all duration-200">
-                Dashboard
-              </button>
-            </div>
+            
 
             <div class="text-center">
               <p class="text-xs text-gray-400">
@@ -260,13 +255,13 @@ const loginWithGoogle = () => {
   console.log('Login con Google')
 }
 
-const goToDashboard = () => {
-  emit('loginSuccess', {
-    id: 1,
-    email: 'usuario@test.com',
-    nombre: 'Usuario Demo',
-    iniciales: 'UD',
-    color_avatar: '#3B82F6'
-  })
-}
+// const goToDashboard = () => {
+//   emit('loginSuccess', {
+//     id: 1,
+//     email: 'usuario@test.com',
+//     nombre: 'Usuario Demo',
+//     iniciales: 'UD',
+//     color_avatar: '#3B82F6'
+//   })
+// }
 </script>

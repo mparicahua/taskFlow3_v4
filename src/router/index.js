@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
 
-
+import LandingPage from '../components/LandingPage.vue'
 import AuthContainer from '../components/AuthContainer.vue'
 import Dashboard from '../components/Dashboard.vue'
 import ProjectBoard from '../components/ProjectBoard.vue'
@@ -9,7 +9,9 @@ import ProjectBoard from '../components/ProjectBoard.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/dashboard'
+    name: 'Home',
+    component: LandingPage,
+    meta: { requiresAuth: false }
   },
   {
     path: '/login',

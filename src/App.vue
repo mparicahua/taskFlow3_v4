@@ -15,9 +15,10 @@ const userStore = useUserStore()
 
 onMounted(() => {
   userStore.restoreSession()
+  // userStore.restoreSession()
   
-  if (userStore.isLoggedIn && router.currentRoute.value.path === '/') {
-    router.push('/dashboard')
-  }
+  // if (userStore.isLoggedIn && router.currentRoute.value.path === '/') {
+  //   router.push('/dashboard')
+  // }
 })
 </script>
