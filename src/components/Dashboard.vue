@@ -1,7 +1,6 @@
 <template>
   <div class="min-h-screen bg-slate-900 flex">
-    <!-- Sidebar -->
-    <div class="w-64 bg-slate-800 flex flex-col">
+    <div class="hidden md:flex md:w-64 bg-slate-800 flex-col">
       <div class="p-6 border-b border-slate-700">
         <div class="flex items-center">
           <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
@@ -28,9 +27,48 @@
       </nav>
     </div>
 
-    <!-- Contenido principal -->
+    <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-40 md:hidden"></div>
+    <transition name="slide">
+      <div v-if="sidebarOpen" class="fixed inset-y-0 left-0 w-64 bg-slate-800 z-50 flex flex-col md:hidden">
+        <div class="p-6 border-b border-slate-700 flex items-center justify-between">
+          <div class="flex items-center">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h1 class="text-xl font-bold text-white">TaskFlow3</h1>
+          </div>
+          <button @click="sidebarOpen = false" class="text-gray-400 hover:text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <nav class="flex-1 p-4">
+          <ul class="space-y-2">
+            <li>
+              <a href="#" @click="sidebarOpen = false" class="flex items-center px-4 py-2 text-blue-400 bg-blue-400/10 rounded-lg">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Proyectos
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </transition>
     <div class="flex-1 flex flex-col">
-      <header class="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-6">
+      <header class="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-4 md:px-6">
+        <button @click="sidebarOpen = true" class="md:hidden text-white p-2">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
         <h2 class="text-xl font-semibold text-white">Proyectos</h2>
         <div class="flex items-center space-x-4">
           <button class="p-2 text-gray-400 hover:text-gray-300 transition-colors">
@@ -141,8 +179,6 @@
         </div>
       </main>
     </div>
-
-    <!-- Modal Crear/Editar Proyecto -->
     <div v-if="showModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="closeModal">
       <div class="bg-slate-800 rounded-lg p-6 w-full max-w-2xl border border-slate-700 max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-6">
@@ -193,9 +229,7 @@
             </button>
           </div>
 
-          <!-- Gestión de miembros (solo si es colaborativo) -->
           <div v-if="formularioProyecto.es_colaborativo" class="space-y-4 border-t border-slate-600 pt-4">
-            <!-- Miembros actuales en edición -->
             <div v-if="modoEdicion && miembrosProyecto.length > 0">
               <label class="block text-sm font-medium text-gray-300 mb-2">Miembros del Equipo</label>
               <div class="space-y-2 max-h-48 overflow-y-auto">
@@ -230,7 +264,6 @@
               </div>
             </div>
 
-            <!-- Agregar nuevo miembro -->
             <div>
               <label class="block text-sm font-medium text-gray-300 mb-2">Agregar Miembros</label>
               <div class="flex flex-col sm:flex-row gap-2">
@@ -271,7 +304,6 @@
               </div>
             </div>
 
-            <!-- Miembros seleccionados (solo en creación) -->
             <div v-if="!modoEdicion && miembrosSeleccionados.length > 0">
               <label class="block text-sm font-medium text-gray-300 mb-2">Miembros a Agregar</label>
               <div class="space-y-2 max-h-48 overflow-y-auto">
@@ -331,6 +363,8 @@
     </div>
   </div>
 </template>
+
+
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -339,7 +373,7 @@ import { useUserStore } from '../stores/userStore'
 const router = useRouter()
 const userStore = useUserStore()
 
-// Estado
+
 const proyectos = ref([])
 const loading = ref(false)
 const showModal = ref(false)
@@ -347,8 +381,9 @@ const loadingModal = ref(false)
 const errorModal = ref('')
 const modoEdicion = ref(false)
 const proyectoEditando = ref(null)
+const sidebarOpen = ref(false)
 
-// Listas para usuarios y roles
+
 const usuarios = ref([])
 const roles = ref([])
 const usuariosDisponibles = ref([])
@@ -356,7 +391,7 @@ const miembrosProyecto = ref([])
 const miembrosSeleccionados = ref([])
 const colaborativoAnterior = ref(true)
 
-// Formulario
+
 const formularioProyecto = reactive({
   nombre: '',
   descripcion: '',
@@ -374,7 +409,7 @@ onMounted(() => {
   cargarRoles()
 })
 
-// Cargar datos
+
 const cargarProyectos = async () => {
   loading.value = true
   try {
@@ -711,3 +746,18 @@ const abrirProyecto = (proyecto) => {
   router.push(`/proyecto/${proyecto.id}`)
 }
 </script>
+
+<style scoped>
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-enter-from {
+  transform: translateX(-100%);
+}
+
+.slide-leave-to {
+  transform: translateX(-100%);
+}
+</style>

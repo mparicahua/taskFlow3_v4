@@ -319,9 +319,6 @@
         </div>
 
         <div class="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p class="text-gray-400 text-sm">
-            &copy; 2025 TaskFlow3. Proyecto académico UCSP.
-          </p>
           <div class="flex space-x-6 mt-4 md:mt-0">
             <a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">Términos de Servicio</a>
             <a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">Política de Privacidad</a>
