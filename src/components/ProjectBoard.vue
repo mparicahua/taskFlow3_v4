@@ -1,6 +1,5 @@
 <template>
     <div class="min-h-screen bg-slate-900 flex">
-        <!-- Sidebar Desktop -->
         <div class="hidden md:flex md:w-64 bg-slate-800 flex-col">
             <div class="p-6 border-b border-slate-700">
                 <div class="flex items-center">
@@ -29,7 +28,6 @@
             </nav>
         </div>
 
-        <!-- Sidebar Mobile (Overlay) -->
         <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-40 md:hidden"></div>
         <transition name="slide">
             <div v-if="sidebarOpen" class="fixed inset-y-0 left-0 w-64 bg-slate-800 z-50 flex flex-col md:hidden">
@@ -107,7 +105,7 @@
             </header>
             <main class="flex-1 overflow-x-auto p-6">
                 <div class="flex space-x-6 h-full min-w-min pb-4">
-                    <!-- COLUMNA: Por Hacer -->
+
                     <div class="flex-shrink-0 w-80">
                         <div class="flex items-center justify-between mb-4">
                             <div class="flex items-center space-x-2">
@@ -200,7 +198,6 @@
                         </button>
                     </div>
 
-                    <!-- COLUMNA: En Progreso -->
                     <div class="flex-shrink-0 w-80">
                         <div class="flex items-center justify-between mb-4">
                             <div class="flex items-center space-x-2">
@@ -271,7 +268,6 @@
                         </button>
                     </div>
 
-                    <!-- COLUMNA: Completado -->
                     <div class="flex-shrink-0 w-80">
                         <div class="flex items-center justify-between mb-4">
                             <div class="flex items-center space-x-2">
@@ -318,8 +314,6 @@
                             Nueva Tarea
                         </button>
                     </div>
-
-                    <!-- BOTÓN: Nueva Lista -->
                     <div class="flex-shrink-0 w-80">
                         <button
                             @click="abrirModalLista"
@@ -419,7 +413,6 @@
                     </div>
                 </div>
             </div>
-            <!-- Modal: Nueva Lista -->
             <div v-if="mostrarModalLista" @click.self="cerrarModalLista"
                 class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                 <div class="bg-slate-800 rounded-lg w-full max-w-md">
@@ -682,8 +675,7 @@ const crearLista = () => {
         errorLista.value = 'El nombre de la lista es requerido'
         return
     }
-    
-    // Aquí iría la lógica para crear la lista (por ahora solo visual)
+
     console.log('Crear lista:', formularioLista.value)
     cerrarModalLista()
 }
