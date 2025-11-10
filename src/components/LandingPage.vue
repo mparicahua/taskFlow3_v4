@@ -59,9 +59,9 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </button>
-            <button @click="scrollToSection('features')"
+            <button @click="descargarRDF"
               class="px-8 py-4 bg-slate-800 border-2 border-slate-700 text-white font-bold rounded-lg hover:bg-slate-700 transition-all">
-              Ver características
+              Descargar RDF
             </button>
           </div>
           <div class="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16">
@@ -360,4 +360,19 @@ const scrollToSection = (sectionId) => {
 const scrollToTop = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
+import rdfFile from '@/assets/rdf.ttl?raw'
+
+const descargarRDF = () => {
+  const contenido = rdfFile;
+  const blob = new Blob([contenido], { type: 'application/ttl' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'archivo.rdf'
+  a.click()
+  URL.revokeObjectURL(url)
+  alert('¡Archivo RDF descargado!')
+}
+
+
 </script>
