@@ -2,7 +2,7 @@
     <div class="min-h-screen flex">
         <div class="w-full lg:w-1/2 bg-slate-900 flex items-center justify-center p-8">
             <div class="max-w-md w-full space-y-8">
-                <!-- Botón de configuración -->
+
                 <div class="flex justify-end">
                     <button class="p-2 text-gray-400 hover:text-gray-300 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -13,8 +13,6 @@
                         </svg>
                     </button>
                 </div>
-
-                <!-- Título -->
                 <div class="text-center">
                     <h2 class="text-3xl font-bold text-white mb-2">
                         Crear Cuenta
@@ -22,13 +20,11 @@
                     <p class="text-sm text-gray-400">
                         ¿Ya tienes cuenta?
                         <button @click="$emit('switchToLogin')" class="text-blue-400 hover:text-blue-300 font-medium">
-                            Inicia sesión
+                            Iniciar sesión
                         </button>
                     </p>
                 </div>
-
                 <div class="space-y-6">
-                    <!-- Botón de Google -->
                     <button @click="registerWithGoogle"
                         class="w-full flex justify-center items-center px-4 py-3 border border-gray-600 rounded-lg text-sm font-medium text-gray-300 bg-gray-800/50 hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200">
                         <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -43,8 +39,6 @@
                         </svg>
                         Registrarse con Google
                     </button>
-
-                    <!-- Divisor -->
                     <div class="relative">
                         <div class="absolute inset-0 flex items-center">
                             <div class="w-full border-t border-gray-600"></div>
@@ -53,50 +47,36 @@
                             <span class="px-2 bg-slate-900 text-gray-400">O continúa con</span>
                         </div>
                     </div>
-
-                    <!-- Formulario de registro -->
                     <form @submit.prevent="handleRegister" class="space-y-6">
-                        <!-- Mensaje de error general -->
-                        <div v-if="registerError" class="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded-lg text-sm">
-                            {{ registerError }}
-                        </div>
-
-                        <!-- Campo Nombre -->
                         <div>
                             <label for="name" class="block text-sm font-medium text-gray-300 mb-2">
                                 Nombre completo
                             </label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
-                                        stroke="currentColor">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
                                 </div>
                                 <input id="name" v-model="form.name" type="text" required
-                                    :class="{'border-red-500': errors.name}"
                                     class="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-600 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                     placeholder="Juan Pérez">
                             </div>
-                            <p v-if="errors.name" class="mt-1 text-sm text-red-400">{{ errors.name }}</p>
                         </div>
-
-                        <!-- Campo Email -->
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-300 mb-2">
                                 Email
                             </label>
                             <div class="relative">
+
                                 <input id="email" v-model="form.email" type="email" required
-                                    :class="{'border-red-500': errors.email}"
                                     class="appearance-none relative block w-full px-3 py-3 pr-10 border border-gray-600 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                     placeholder="tu@ejemplo.com">
                             </div>
-                            <p v-if="errors.email" class="mt-1 text-sm text-red-400">{{ errors.email }}</p>
                         </div>
 
-                        <!-- Campo Contraseña -->
                         <div>
                             <label for="password" class="block text-sm font-medium text-gray-300 mb-2">
                                 Contraseña
@@ -104,7 +84,6 @@
                             <div class="relative">
                                 <input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'"
                                     required
-                                    :class="{'border-red-500': errors.password}"
                                     class="appearance-none relative block w-full px-3 py-3 pr-10 border border-gray-600 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                     placeholder="••••••••">
                                 <button type="button" @click="showPassword = !showPassword"
@@ -123,10 +102,8 @@
                                     </svg>
                                 </button>
                             </div>
-                            <p v-if="errors.password" class="mt-1 text-sm text-red-400">{{ errors.password }}</p>
+                            
                         </div>
-
-                        <!-- Campo Confirmar Contraseña -->
                         <div>
                             <label for="confirmPassword" class="block text-sm font-medium text-gray-300 mb-2">
                                 Confirmar contraseña
@@ -134,7 +111,6 @@
                             <div class="relative">
                                 <input id="confirmPassword" v-model="form.confirmPassword"
                                     :type="showConfirmPassword ? 'text' : 'password'" required
-                                    :class="{'border-red-500': errors.confirmPassword}"
                                     class="appearance-none relative block w-full px-3 py-3 pr-10 border border-gray-600 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                     placeholder="••••••••">
                                 <button type="button" @click="showConfirmPassword = !showConfirmPassword"
@@ -153,18 +129,23 @@
                                     </svg>
                                 </button>
                             </div>
-                            <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-400">{{ errors.confirmPassword }}</p>
                         </div>
-
-                        <!-- Botón de registro -->
                         <div>
                             <button type="submit" :disabled="isLoading"
-                                class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+                                class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+                                <span v-if="isLoading" class="absolute left-0 inset-y-0 flex items-center pl-3">
+                                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
+                                        fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                            stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                        </path>
+                                    </svg>
+                                </span>
                                 {{ isLoading ? 'Creando cuenta...' : 'Crear Cuenta' }}
                             </button>
                         </div>
-
-                        <!-- Términos y condiciones -->
                         <div class="text-center">
                             <p class="text-xs text-gray-400">
                                 Al continuar, aceptas nuestros
@@ -177,8 +158,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Panel derecho con branding -->
         <div class="hidden lg:flex lg:w-1/2 bg-blue-600 relative">
             <div class="flex items-center justify-center w-full">
                 <div class="text-center">
@@ -198,10 +177,8 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-
-const emit = defineEmits(['switchToLogin', 'registerSuccess'])
-
+import { ref, reactive, computed } from 'vue'
+const emit = defineEmits(['switchToLogin'])
 const form = reactive({
     name: '',
     email: '',
@@ -209,109 +186,34 @@ const form = reactive({
     confirmPassword: ''
 })
 
-const errors = reactive({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-})
 
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 const isLoading = ref(false)
-const registerError = ref('')
-
 const validateForm = () => {
-    // Limpiar errores previos
-    errors.name = ''
-    errors.email = ''
-    errors.password = ''
-    errors.confirmPassword = ''
-    registerError.value = ''
 
     let isValid = true
-
-    // Validar nombre
-    if (!form.name.trim()) {
-        errors.name = 'El nombre es requerido'
-        isValid = false
-    } else if (form.name.trim().length < 2) {
-        errors.name = 'El nombre debe tener al menos 2 caracteres'
-        isValid = false
-    }
-
-    // Validar email
-    if (!form.email) {
-        errors.email = 'El email es requerido'
-        isValid = false
-    } else {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(form.email)) {
-            errors.email = 'Email inválido'
-            isValid = false
-        }
-    }
-
-    // Validar contraseña
-    if (!form.password) {
-        errors.password = 'La contraseña es requerida'
-        isValid = false
-    } else if (form.password.length < 6) {
-        errors.password = 'La contraseña debe tener al menos 6 caracteres'
-        isValid = false
-    }
-
-    // Validar confirmación de contraseña
-    if (!form.confirmPassword) {
-        errors.confirmPassword = 'Debes confirmar tu contraseña'
-        isValid = false
-    } else if (form.password !== form.confirmPassword) {
-        errors.confirmPassword = 'Las contraseñas no coinciden'
-        isValid = false
-    }
-
     return isValid
 }
-
 const handleRegister = async () => {
-    if (!validateForm()) return
 
     isLoading.value = true
-    registerError.value = ''
 
     try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                nombre: form.name,
-                email: form.email,
-                password: form.password
-            })
+        console.log('Registro exitoso:', {
+            name: form.name,
+            email: form.email,
+            password: form.password
         })
 
-        const data = await response.json()
-
-        if (data.success) {
-            // Registro exitoso - emitir evento con datos del usuario
-            emit('registerSuccess', data.user)
-        } else {
-            // Mostrar mensaje de error del servidor
-            registerError.value = data.message || 'Error al registrarse'
-        }
-
     } catch (error) {
-        console.error('Error de conexión:', error)
-        registerError.value = 'Error de conexión con el servidor'
+        console.error('Error en registro:', error)
+        alert('Error al registrarse')
     } finally {
         isLoading.value = false
     }
 }
-
 const registerWithGoogle = () => {
     console.log('Registro con Google clickeado')
-    // Aquí iría la lógica de OAuth con Google
 }
 </script>
