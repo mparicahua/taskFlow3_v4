@@ -1,6 +1,6 @@
 <template>
     <div class="min-h-screen bg-slate-950 flex flex-col">
-        <!-- HEADER SUPERIOR (ACTUALIZADO - igual que Dashboard) -->
+        <!-- HEADER SUPERIOR -->
         <header class="h-16 bg-slate-800 border-b border-slate-700 sticky top-0 z-30">
             <div class="px-4 lg:px-6 h-full flex items-center justify-between">
                 <!-- Botón menú móvil + Título -->
@@ -49,12 +49,12 @@
         </header>
 
         <div class="flex flex-1 overflow-hidden">
-            <!-- SIDEBAR (ACTUALIZADO - igual que Dashboard) -->
+            <!-- SIDEBAR -->
             <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-40 lg:hidden"></div>
 
             <aside :class="['fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700 transform transition-transform duration-300 ease-in-out flex flex-col', sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']">
                 
-                <!-- Logo (NUEVO - igual que Dashboard) -->
+                <!-- Logo -->
                 <div class="p-6 border-b border-slate-700">
                     <div class="flex items-center">
                         <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
@@ -66,7 +66,7 @@
                     </div>
                 </div>
 
-                <!-- Navegación (NUEVO) -->
+                <!-- Navegación -->
                 <nav class="p-4 border-b border-slate-700">
                     <ul class="space-y-2">
                         <li>
@@ -80,14 +80,14 @@
                     </ul>
                 </nav>
 
-                <!-- Header del proyecto (ACTUALIZADO) -->
+                <!-- Header del proyecto -->
                 <div class="p-4 border-b border-slate-700">
                     <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Proyecto Actual</h2>
                     <h3 class="text-base font-bold text-white">{{ proyecto.nombre }}</h3>
                     <p v-if="proyecto.descripcion" class="text-sm text-gray-400 mt-1">{{ proyecto.descripcion }}</p>
                 </div>
 
-                <!-- Estadísticas del proyecto (MANTENIDO) -->
+                <!-- Estadísticas del proyecto -->
                 <div class="p-4 border-b border-slate-700">
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Estadísticas</h3>
                     <div class="space-y-2">
@@ -106,7 +106,7 @@
                     </div>
                 </div>
 
-                <!-- Miembros del proyecto (MANTENIDO) -->
+                <!-- Miembros del proyecto -->
                 <div class="p-4 flex-1 overflow-y-auto">
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Equipo ({{ proyecto.miembros.length }})</h3>
                     <div class="space-y-2">
@@ -121,7 +121,7 @@
 
             </aside>
 
-            <!-- CONTENIDO PRINCIPAL - Tablero Kanban (MANTENIDO) -->
+            <!-- CONTENIDO PRINCIPAL - Tablero Kanban -->
             <main class="flex-1 overflow-hidden flex flex-col bg-slate-950">
                 <!-- Loading -->
                 <div v-if="loading" class="flex items-center justify-center h-full">
@@ -246,7 +246,7 @@
             </main>
         </div>
 
-        <!-- MODAL: Nueva/Editar Tarea (MANTENIDO) -->
+        <!-- MODAL: Nueva/Editar Tarea -->
         <div v-if="mostrarModalTarea" @click.self="cerrarModalTarea" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div class="bg-slate-800 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
                 <div class="sticky top-0 bg-slate-800 border-b border-slate-700 px-6 py-4 flex items-center justify-between z-10">
@@ -346,7 +346,7 @@
             </div>
         </div>
 
-        <!-- MODAL: Nueva Lista (MANTENIDO) -->
+        <!-- MODAL: Nueva Lista -->
         <div v-if="mostrarModalLista" @click.self="cerrarModalLista" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div class="bg-slate-800 rounded-lg w-full max-w-md shadow-2xl">
                 <div class="border-b border-slate-700 px-6 py-4 flex items-center justify-between">
@@ -396,7 +396,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
 import Sortable from 'sortablejs'
@@ -416,6 +416,10 @@ const proyecto = ref({
 const listas = ref([])
 const loading = ref(true)
 const sidebarOpen = ref(false)
+
+// Control de instancias de Sortable
+const sortableInstances = ref([])
+const sortableInicializado = ref(false)
 
 // Computed properties para estadísticas
 const totalTareas = computed(() => {
@@ -509,24 +513,6 @@ const cargarProyecto = async () => {
     }
 }
 
-// 🔥 FIX CORRECTO: Con tu endpoint y inicializando drag & drop
-// const cargarListasYTareas = async () => {
-//     try {
-//         // 🔥 USANDO TU ENDPOINT CORRECTO
-//         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/lists/proyecto/${proyecto.value.id}`)
-//         const data = await response.json()
-
-//         if (data.success) {
-//             listas.value = data.data
-            
-//             // 🔥 FIX 1: Inicializar drag & drop DESPUÉS de cargar
-//             await nextTick()
-//             inicializarDragAndDrop()
-//         }
-//     } catch (error) {
-//         console.error('Error al cargar listas:', error)
-//     }
-// }
 const cargarListasYTareas = async () => {
     try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/lists/project/${proyecto.value.id}`)
@@ -534,15 +520,39 @@ const cargarListasYTareas = async () => {
 
         if (data.success) {
             listas.value = data.data
-            
-            // Inicializar SortableJS después de cargar las listas
-            await nextTick()
-            inicializarDragAndDrop()
         }
     } catch (error) {
         console.error('Error al cargar listas:', error)
     }
 }
+
+// ==================== 🔥 WATCH MEJORADO ====================
+
+watch(
+    () => listas.value,
+    async (newListas) => {
+        // Esperar a que Vue termine de renderizar
+        await nextTick()
+        await nextTick() // Doble nextTick para asegurar renderizado completo
+        
+        // Verificar que existan contenedores en el DOM
+        const contenedores = document.querySelectorAll('[data-lista-id]')
+        
+        if (contenedores.length === 0) return
+        
+        // Si ya está inicializado y hay listas, reinicializar
+        if (sortableInicializado.value && newListas.length > 0) {
+            destruirSortables()
+            inicializarDragAndDrop()
+        }
+        // Si no está inicializado y hay listas, inicializar por primera vez
+        else if (!sortableInicializado.value && newListas.length > 0) {
+            inicializarDragAndDrop()
+            sortableInicializado.value = true
+        }
+    },
+    { deep: true, immediate: false }
+)
 
 // ==================== FUNCIONES DE LISTAS ====================
 
@@ -585,9 +595,6 @@ const crearLista = async () => {
         if (data.success) {
             listas.value.push({ ...data.data, tareas: [] })
             cerrarModalLista()
-            
-            await nextTick()
-            inicializarDragAndDrop()
         } else {
             errorLista.value = data.message || 'Error al crear la lista'
         }
@@ -699,9 +706,6 @@ const crearTarea = async () => {
             }
             
             cerrarModalTarea()
-            
-            await nextTick()
-            inicializarDragAndDrop()
         } else {
             errorTarea.value = data.message || 'Error al crear la tarea'
         }
@@ -812,88 +816,208 @@ const toggleCompletada = async (tarea) => {
 
 // ==================== DRAG & DROP ====================
 
-// 🔥 FIX 2: Función mejorada para evitar duplicaciones
+// const inicializarDragAndDrop = () => {
+//     // Limpiar instancias anteriores primero
+//     destruirSortables()
+    
+//     const contenedores = document.querySelectorAll('[data-lista-id]')
+    
+//     if (contenedores.length === 0) {
+//         console.warn('No se encontraron contenedores para inicializar Sortable')
+//         return
+//     }
+    
+//     contenedores.forEach(contenedor => {
+//         try {
+//             const sortableInstance = Sortable.create(contenedor, {
+//                 group: 'tareas',
+//                 animation: 150,
+//                 ghostClass: 'sortable-ghost',
+//                 dragClass: 'sortable-drag',
+//                 forceFallback: true, // 🔥 NUEVO: Forzar fallback para mayor compatibilidad
+                
+//                 onEnd: async (evt) => {
+//                     const tareaId = parseInt(evt.item.dataset.tareaId)
+//                     const nuevaListaId = parseInt(evt.to.dataset.listaId)
+//                     const nuevoOrden = evt.newIndex
+                    
+//                     try {
+//                         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${tareaId}/move`, {
+//                             method: 'PUT',
+//                             headers: {
+//                                 'Content-Type': 'application/json',
+//                             },
+//                             body: JSON.stringify({
+//                                 nueva_lista_id: nuevaListaId,
+//                                 nuevo_orden: nuevoOrden
+//                             })
+//                         })
+                        
+//                         const data = await response.json()
+                        
+//                         if (data.success) {
+//                             // Actualizar estado local sin recargar
+//                             const listaAntigua = listas.value.find(l => 
+//                                 l.tareas && l.tareas.some(t => t.id === tareaId)
+//                             )
+                            
+//                             if (listaAntigua) {
+//                                 const tareaIndex = listaAntigua.tareas.findIndex(t => t.id === tareaId)
+//                                 if (tareaIndex !== -1) {
+//                                     const tarea = listaAntigua.tareas[tareaIndex]
+                                    
+//                                     // Remover de lista antigua
+//                                     listaAntigua.tareas.splice(tareaIndex, 1)
+                                    
+//                                     // Agregar a nueva lista
+//                                     const listaNueva = listas.value.find(l => l.id === nuevaListaId)
+//                                     if (listaNueva) {
+//                                         if (!listaNueva.tareas) listaNueva.tareas = []
+//                                         tarea.lista_id = nuevaListaId
+//                                         listaNueva.tareas.splice(nuevoOrden, 0, tarea)
+//                                     }
+//                                 }
+//                             }
+//                         }
+//                     } catch (error) {
+//                         console.error('Error al mover tarea:', error)
+//                         // Si hay error, recargar datos
+//                         await cargarListasYTareas()
+//                     }
+//                 }
+//             })
+
+//             // Guardar instancia
+//             sortableInstances.value.push(sortableInstance)
+//         } catch (error) {
+//             console.error('Error al crear instancia Sortable:', error)
+//         }
+//     })
+    
+//     console.log(`✅ Sortable inicializado en ${sortableInstances.value.length} contenedores`)
+// }
 const inicializarDragAndDrop = () => {
+    // Limpiar instancias anteriores primero
+    destruirSortables()
+    
     const contenedores = document.querySelectorAll('[data-lista-id]')
     
+    if (contenedores.length === 0) {
+        console.warn('No se encontraron contenedores para inicializar Sortable')
+        return
+    }
+    
     contenedores.forEach(contenedor => {
-        // Destruir instancia anterior si existe
-        if (contenedor._sortable) {
-            contenedor._sortable.destroy()
-        }
-
-        const sortableInstance = Sortable.create(contenedor, {
-            group: 'tareas',
-            animation: 150,
-            ghostClass: 'sortable-ghost',
-            dragClass: 'sortable-drag',
-            
-            onEnd: async (evt) => {
-                const tareaId = parseInt(evt.item.dataset.tareaId)
-                const nuevaListaId = parseInt(evt.to.dataset.listaId)
-                const nuevoOrden = evt.newIndex
+        try {
+            const sortableInstance = Sortable.create(contenedor, {
+                group: 'tareas',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                forceFallback: true,
                 
-                // 🔥 DESHABILITAR todos los sortables durante el movimiento
-                contenedores.forEach(c => {
-                    if (c._sortable) {
-                        c._sortable.option('disabled', true)
+                onEnd: async (evt) => {
+                    const tareaId = parseInt(evt.item.dataset.tareaId)
+                    const listaOrigenId = parseInt(evt.from.dataset.listaId)
+                    const listaDestinoId = parseInt(evt.to.dataset.listaId)
+                    const nuevoOrden = evt.newIndex
+                    const ordenAnterior = evt.oldIndex
+                    
+                    // 🔥 FIX: Si es la misma lista Y el orden no cambió, no hacer nada
+                    if (listaOrigenId === listaDestinoId && nuevoOrden === ordenAnterior) {
+                        return
                     }
-                })
-                
-                try {
-                    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${tareaId}/move`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            nueva_lista_id: nuevaListaId,
-                            nuevo_orden: nuevoOrden
+                    
+                    try {
+                        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${tareaId}/move`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                nueva_lista_id: listaDestinoId,
+                                nuevo_orden: nuevoOrden
+                            })
                         })
-                    })
-                    
-                    const data = await response.json()
-                    
-                    if (data.success) {
-                        // 🔥 Actualizar estado local sin recargar todo
-                        const listaAntigua = listas.value.find(l => 
-                            l.tareas && l.tareas.some(t => t.id === tareaId)
-                        )
                         
-                        if (listaAntigua) {
-                            const tareaIndex = listaAntigua.tareas.findIndex(t => t.id === tareaId)
-                            const tarea = listaAntigua.tareas[tareaIndex]
-                            
-                            // Remover de lista antigua
-                            listaAntigua.tareas.splice(tareaIndex, 1)
-                            
-                            // Agregar a nueva lista
-                            const listaNueva = listas.value.find(l => l.id === nuevaListaId)
-                            if (listaNueva) {
-                                if (!listaNueva.tareas) listaNueva.tareas = []
-                                tarea.lista_id = nuevaListaId
-                                listaNueva.tareas.splice(nuevoOrden, 0, tarea)
+                        const data = await response.json()
+                        
+                        if (data.success) {
+                            // 🔥 FIX: Distinguir entre movimiento en misma lista vs listas diferentes
+                            if (listaOrigenId === listaDestinoId) {
+                                // ✅ MISMA LISTA: Solo reordenar el array sin agregar/quitar
+                                // Sortable ya movió el DOM, solo sincronizamos el array de Vue
+                                const lista = listas.value.find(l => l.id === listaOrigenId)
+                                
+                                if (lista && lista.tareas) {
+                                    // Encontrar la tarea
+                                    const tarea = lista.tareas.find(t => t.id === tareaId)
+                                    
+                                    if (tarea) {
+                                        // Remover de posición anterior
+                                        const indexAnterior = lista.tareas.findIndex(t => t.id === tareaId)
+                                        lista.tareas.splice(indexAnterior, 1)
+                                        
+                                        // Insertar en nueva posición
+                                        lista.tareas.splice(nuevoOrden, 0, tarea)
+                                    }
+                                }
+                            } else {
+                                // ✅ LISTAS DIFERENTES: Mover entre listas
+                                const listaOrigen = listas.value.find(l => l.id === listaOrigenId)
+                                const listaDestino = listas.value.find(l => l.id === listaDestinoId)
+                                
+                                if (listaOrigen && listaOrigen.tareas) {
+                                    const tareaIndex = listaOrigen.tareas.findIndex(t => t.id === tareaId)
+                                    
+                                    if (tareaIndex !== -1) {
+                                        const tarea = listaOrigen.tareas[tareaIndex]
+                                        
+                                        // Remover de lista origen
+                                        listaOrigen.tareas.splice(tareaIndex, 1)
+                                        
+                                        // Agregar a lista destino
+                                        if (listaDestino) {
+                                            if (!listaDestino.tareas) listaDestino.tareas = []
+                                            tarea.lista_id = listaDestinoId
+                                            listaDestino.tareas.splice(nuevoOrden, 0, tarea)
+                                        }
+                                    }
+                                }
                             }
+                        } else {
+                            // Si falla, recargar para mantener consistencia
+                            await cargarListasYTareas()
                         }
+                    } catch (error) {
+                        console.error('Error al mover tarea:', error)
+                        // Si hay error, recargar datos
+                        await cargarListasYTareas()
                     }
-                } catch (error) {
-                    console.error('Error al mover tarea:', error)
-                    // Si hay error, recargar para mantener consistencia
-                    await cargarListasYTareas()
-                } finally {
-                    // 🔥 RE-HABILITAR sortables después del movimiento
-                    contenedores.forEach(c => {
-                        if (c._sortable) {
-                            c._sortable.option('disabled', false)
-                        }
-                    })
                 }
-            }
-        })
+            })
 
-        // Guardar referencia
-        contenedor._sortable = sortableInstance
+            // Guardar instancia
+            sortableInstances.value.push(sortableInstance)
+        } catch (error) {
+            console.error('Error al crear instancia Sortable:', error)
+        }
     })
+    
+    console.log(`✅ Sortable inicializado en ${sortableInstances.value.length} contenedores`)
+}
+
+const destruirSortables = () => {
+    sortableInstances.value.forEach(instance => {
+        try {
+            if (instance && typeof instance.destroy === 'function') {
+                instance.destroy()
+            }
+        } catch (error) {
+            console.error('Error al destruir instancia Sortable:', error)
+        }
+    })
+    sortableInstances.value = []
 }
 
 // ==================== UTILIDADES ====================
@@ -912,6 +1036,11 @@ const volverADashboard = () => {
 
 onMounted(async () => {
     await cargarProyecto()
+})
+
+onBeforeUnmount(() => {
+    destruirSortables()
+    sortableInicializado.value = false
 })
 </script>
 
