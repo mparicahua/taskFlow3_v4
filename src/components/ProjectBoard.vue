@@ -896,6 +896,116 @@ const toggleCompletada = async (tarea) => {
     
 //     console.log(`✅ Sortable inicializado en ${sortableInstances.value.length} contenedores`)
 // }
+// const inicializarDragAndDrop = () => {
+//     // Limpiar instancias anteriores primero
+//     destruirSortables()
+    
+//     const contenedores = document.querySelectorAll('[data-lista-id]')
+    
+//     if (contenedores.length === 0) {
+//         console.warn('No se encontraron contenedores para inicializar Sortable')
+//         return
+//     }
+    
+//     contenedores.forEach(contenedor => {
+//         try {
+//             const sortableInstance = Sortable.create(contenedor, {
+//                 group: 'tareas',
+//                 animation: 150,
+//                 ghostClass: 'sortable-ghost',
+//                 dragClass: 'sortable-drag',
+//                 forceFallback: true,
+                
+//                 onEnd: async (evt) => {
+//                     const tareaId = parseInt(evt.item.dataset.tareaId)
+//                     const listaOrigenId = parseInt(evt.from.dataset.listaId)
+//                     const listaDestinoId = parseInt(evt.to.dataset.listaId)
+//                     const nuevoOrden = evt.newIndex
+//                     const ordenAnterior = evt.oldIndex
+                    
+//                     // 🔥 FIX: Si es la misma lista Y el orden no cambió, no hacer nada
+//                     if (listaOrigenId === listaDestinoId && nuevoOrden === ordenAnterior) {
+//                         return
+//                     }
+                    
+//                     try {
+//                         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${tareaId}/move`, {
+//                             method: 'PUT',
+//                             headers: {
+//                                 'Content-Type': 'application/json',
+//                             },
+//                             body: JSON.stringify({
+//                                 nueva_lista_id: listaDestinoId,
+//                                 nuevo_orden: nuevoOrden
+//                             })
+//                         })
+                        
+//                         const data = await response.json()
+                        
+//                         if (data.success) {
+//                             // 🔥 FIX: Distinguir entre movimiento en misma lista vs listas diferentes
+//                             if (listaOrigenId === listaDestinoId) {
+//                                 // ✅ MISMA LISTA: Solo reordenar el array sin agregar/quitar
+//                                 // Sortable ya movió el DOM, solo sincronizamos el array de Vue
+//                                 const lista = listas.value.find(l => l.id === listaOrigenId)
+                                
+//                                 if (lista && lista.tareas) {
+//                                     // Encontrar la tarea
+//                                     const tarea = lista.tareas.find(t => t.id === tareaId)
+                                    
+//                                     if (tarea) {
+//                                         // Remover de posición anterior
+//                                         const indexAnterior = lista.tareas.findIndex(t => t.id === tareaId)
+//                                         lista.tareas.splice(indexAnterior, 1)
+                                        
+//                                         // Insertar en nueva posición
+//                                         lista.tareas.splice(nuevoOrden, 0, tarea)
+//                                     }
+//                                 }
+//                             } else {
+//                                 // ✅ LISTAS DIFERENTES: Mover entre listas
+//                                 const listaOrigen = listas.value.find(l => l.id === listaOrigenId)
+//                                 const listaDestino = listas.value.find(l => l.id === listaDestinoId)
+                                
+//                                 if (listaOrigen && listaOrigen.tareas) {
+//                                     const tareaIndex = listaOrigen.tareas.findIndex(t => t.id === tareaId)
+                                    
+//                                     if (tareaIndex !== -1) {
+//                                         const tarea = listaOrigen.tareas[tareaIndex]
+                                        
+//                                         // Remover de lista origen
+//                                         listaOrigen.tareas.splice(tareaIndex, 1)
+                                        
+//                                         // Agregar a lista destino
+//                                         if (listaDestino) {
+//                                             if (!listaDestino.tareas) listaDestino.tareas = []
+//                                             tarea.lista_id = listaDestinoId
+//                                             listaDestino.tareas.splice(nuevoOrden, 0, tarea)
+//                                         }
+//                                     }
+//                                 }
+//                             }
+//                         } else {
+//                             // Si falla, recargar para mantener consistencia
+//                             await cargarListasYTareas()
+//                         }
+//                     } catch (error) {
+//                         console.error('Error al mover tarea:', error)
+//                         // Si hay error, recargar datos
+//                         await cargarListasYTareas()
+//                     }
+//                 }
+//             })
+
+//             // Guardar instancia
+//             sortableInstances.value.push(sortableInstance)
+//         } catch (error) {
+//             console.error('Error al crear instancia Sortable:', error)
+//         }
+//     })
+    
+//     console.log(`✅ Sortable inicializado en ${sortableInstances.value.length} contenedores`)
+// }
 const inicializarDragAndDrop = () => {
     // Limpiar instancias anteriores primero
     destruirSortables()
@@ -916,6 +1026,12 @@ const inicializarDragAndDrop = () => {
                 dragClass: 'sortable-drag',
                 forceFallback: true,
                 
+                // 🔥 NUEVO: Prevenir que Vue re-renderice durante el drag
+                onStart: (evt) => {
+                    // Deshabilitar el watch temporalmente
+                    // No hacemos nada aquí, pero podemos agregar lógica si es necesario
+                },
+                
                 onEnd: async (evt) => {
                     const tareaId = parseInt(evt.item.dataset.tareaId)
                     const listaOrigenId = parseInt(evt.from.dataset.listaId)
@@ -923,10 +1039,13 @@ const inicializarDragAndDrop = () => {
                     const nuevoOrden = evt.newIndex
                     const ordenAnterior = evt.oldIndex
                     
-                    // 🔥 FIX: Si es la misma lista Y el orden no cambió, no hacer nada
+                    // Si es la misma lista Y el orden no cambió, no hacer nada
                     if (listaOrigenId === listaDestinoId && nuevoOrden === ordenAnterior) {
                         return
                     }
+                    
+                    // 🔥 CRÍTICO: Prevenir que Vue interfiera con el DOM de Sortable
+                    // Primero actualizar el backend, LUEGO actualizar Vue
                     
                     try {
                         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${tareaId}/move`, {
@@ -943,27 +1062,30 @@ const inicializarDragAndDrop = () => {
                         const data = await response.json()
                         
                         if (data.success) {
-                            // 🔥 FIX: Distinguir entre movimiento en misma lista vs listas diferentes
+                            // 🔥 SOLUCIÓN: Usar nextTick y actualizar sin triggerar re-render
+                            await nextTick()
+                            
                             if (listaOrigenId === listaDestinoId) {
-                                // ✅ MISMA LISTA: Solo reordenar el array sin agregar/quitar
-                                // Sortable ya movió el DOM, solo sincronizamos el array de Vue
+                                // ✅ MISMA LISTA
                                 const lista = listas.value.find(l => l.id === listaOrigenId)
                                 
                                 if (lista && lista.tareas) {
-                                    // Encontrar la tarea
-                                    const tarea = lista.tareas.find(t => t.id === tareaId)
+                                    // 🔥 Crear una copia del array para evitar reactividad durante la manipulación
+                                    const tareas = [...lista.tareas]
+                                    const tareaIndex = tareas.findIndex(t => t.id === tareaId)
                                     
-                                    if (tarea) {
+                                    if (tareaIndex !== -1) {
                                         // Remover de posición anterior
-                                        const indexAnterior = lista.tareas.findIndex(t => t.id === tareaId)
-                                        lista.tareas.splice(indexAnterior, 1)
-                                        
+                                        const [tarea] = tareas.splice(tareaIndex, 1)
                                         // Insertar en nueva posición
-                                        lista.tareas.splice(nuevoOrden, 0, tarea)
+                                        tareas.splice(nuevoOrden, 0, tarea)
+                                        
+                                        // 🔥 Actualizar el array completo de una sola vez
+                                        lista.tareas = tareas
                                     }
                                 }
                             } else {
-                                // ✅ LISTAS DIFERENTES: Mover entre listas
+                                // ✅ LISTAS DIFERENTES
                                 const listaOrigen = listas.value.find(l => l.id === listaOrigenId)
                                 const listaDestino = listas.value.find(l => l.id === listaDestinoId)
                                 
@@ -971,27 +1093,31 @@ const inicializarDragAndDrop = () => {
                                     const tareaIndex = listaOrigen.tareas.findIndex(t => t.id === tareaId)
                                     
                                     if (tareaIndex !== -1) {
-                                        const tarea = listaOrigen.tareas[tareaIndex]
+                                        // Crear copias de los arrays
+                                        const tareasOrigen = [...listaOrigen.tareas]
+                                        const [tarea] = tareasOrigen.splice(tareaIndex, 1)
                                         
-                                        // Remover de lista origen
-                                        listaOrigen.tareas.splice(tareaIndex, 1)
+                                        // Actualizar lista origen
+                                        listaOrigen.tareas = tareasOrigen
                                         
-                                        // Agregar a lista destino
+                                        // Actualizar lista destino
                                         if (listaDestino) {
-                                            if (!listaDestino.tareas) listaDestino.tareas = []
+                                            const tareasDestino = listaDestino.tareas ? [...listaDestino.tareas] : []
                                             tarea.lista_id = listaDestinoId
-                                            listaDestino.tareas.splice(nuevoOrden, 0, tarea)
+                                            tareasDestino.splice(nuevoOrden, 0, tarea)
+                                            listaDestino.tareas = tareasDestino
                                         }
                                     }
                                 }
                             }
                         } else {
-                            // Si falla, recargar para mantener consistencia
+                            // Si falla, revertir el cambio visual y recargar
+                            console.error('Error al mover tarea en backend:', data.message)
                             await cargarListasYTareas()
                         }
                     } catch (error) {
                         console.error('Error al mover tarea:', error)
-                        // Si hay error, recargar datos
+                        // Si hay error, recargar para mantener consistencia
                         await cargarListasYTareas()
                     }
                 }
@@ -1006,7 +1132,6 @@ const inicializarDragAndDrop = () => {
     
     console.log(`✅ Sortable inicializado en ${sortableInstances.value.length} contenedores`)
 }
-
 const destruirSortables = () => {
     sortableInstances.value.forEach(instance => {
         try {
