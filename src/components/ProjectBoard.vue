@@ -1,70 +1,94 @@
 <template>
     <div class="min-h-screen bg-slate-950 flex flex-col">
-        <!-- HEADER SUPERIOR (consistente con Dashboard) -->
-        <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30">
-            <div class="px-4 lg:px-6 py-3 flex items-center justify-between">
-                <!-- Logo y título -->
+        <!-- HEADER SUPERIOR (ACTUALIZADO - igual que Dashboard) -->
+        <header class="h-16 bg-slate-800 border-b border-slate-700 sticky top-0 z-30">
+            <div class="px-4 lg:px-6 h-full flex items-center justify-between">
+                <!-- Botón menú móvil + Título -->
                 <div class="flex items-center space-x-4">
-                    <button @click="toggleSidebar" class="lg:hidden text-gray-400 hover:text-white">
+                    <button @click="toggleSidebar" class="lg:hidden text-gray-400 hover:text-white p-2">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
                     
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h1 class="text-lg font-bold text-white">{{ proyecto.nombre }}</h1>
-                            <p class="text-xs text-gray-400 hidden sm:block">Tablero Kanban</p>
-                        </div>
-                    </div>
+                    <h2 class="text-xl font-semibold text-white">{{ proyecto.nombre }}</h2>
                 </div>
 
                 <!-- Acciones del header -->
-                <div class="flex items-center space-x-2">
-                    <button @click="abrirModalLista" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center text-sm">
-                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex items-center space-x-4">
+                    <button @click="abrirModalLista" class="hidden sm:flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
-                        <span class="hidden sm:inline">Nueva Lista</span>
-                        <span class="sm:hidden">Lista</span>
+                        Nueva Lista
                     </button>
 
-                    <!-- Avatar del usuario -->
-                    <div :style="{ backgroundColor: userStore.currentUser.color_avatar }" class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold cursor-pointer hover:opacity-80 transition-opacity" :title="userStore.currentUser.nombre">
-                        {{ userStore.currentUser.iniciales }}
+                    <button @click="abrirModalLista" class="sm:hidden p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+
+                    <button class="p-2 text-gray-400 hover:text-gray-300 transition-colors hidden sm:block">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </button>
+
+                    <div class="flex items-center space-x-3">
+                        <div :style="{ backgroundColor: userStore.currentUser.color_avatar }" class="w-8 h-8 rounded-full flex items-center justify-center">
+                            <span class="text-sm font-medium text-white">{{ userStore.currentUser.iniciales }}</span>
+                        </div>
+                        <button @click="handleLogout" class="text-sm text-gray-400 hover:text-gray-300 hidden sm:block">
+                            Salir
+                        </button>
                     </div>
                 </div>
             </div>
         </header>
 
         <div class="flex flex-1 overflow-hidden">
-            <!-- SIDEBAR (consistente con Dashboard) -->
-            <!-- Overlay móvil -->
+            <!-- SIDEBAR (ACTUALIZADO - igual que Dashboard) -->
             <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-40 lg:hidden"></div>
 
-            <!-- Sidebar -->
-            <aside :class="['fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 transform transition-transform duration-300 ease-in-out flex flex-col', sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']">
-                <!-- Header del sidebar -->
-                <div class="p-4 border-b border-slate-800">
-                    <div class="flex items-center justify-between mb-3">
-                        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wide">Proyecto</h2>
-                        <button @click="sidebarOpen = false" class="lg:hidden text-gray-400 hover:text-white">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <aside :class="['fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700 transform transition-transform duration-300 ease-in-out flex flex-col', sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']">
+                
+                <!-- Logo (NUEVO - igual que Dashboard) -->
+                <div class="p-6 border-b border-slate-700">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                        </button>
+                        </div>
+                        <h1 class="text-xl font-bold text-white">TaskFlow3</h1>
                     </div>
+                </div>
+
+                <!-- Navegación (NUEVO) -->
+                <nav class="p-4 border-b border-slate-700">
+                    <ul class="space-y-2">
+                        <li>
+                            <button @click="volverADashboard" class="w-full flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors">
+                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                Volver a Proyectos
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- Header del proyecto (ACTUALIZADO) -->
+                <div class="p-4 border-b border-slate-700">
+                    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Proyecto Actual</h2>
                     <h3 class="text-base font-bold text-white">{{ proyecto.nombre }}</h3>
                     <p v-if="proyecto.descripcion" class="text-sm text-gray-400 mt-1">{{ proyecto.descripcion }}</p>
                 </div>
 
-                <!-- Estadísticas del proyecto -->
-                <div class="p-4 border-b border-slate-800">
+                <!-- Estadísticas del proyecto (MANTENIDO) -->
+                <div class="p-4 border-b border-slate-700">
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Estadísticas</h3>
                     <div class="space-y-2">
                         <div class="flex items-center justify-between">
@@ -82,11 +106,11 @@
                     </div>
                 </div>
 
-                <!-- Miembros del proyecto -->
-                <div class="p-4 border-b border-slate-800 flex-1 overflow-y-auto">
+                <!-- Miembros del proyecto (MANTENIDO) -->
+                <div class="p-4 flex-1 overflow-y-auto">
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Equipo ({{ proyecto.miembros.length }})</h3>
                     <div class="space-y-2">
-                        <div v-for="miembro in proyecto.miembros" :key="miembro.id" class="flex items-center space-x-2 p-2 rounded hover:bg-slate-800/50 transition-colors">
+                        <div v-for="miembro in proyecto.miembros" :key="miembro.id" class="flex items-center space-x-2 p-2 rounded hover:bg-slate-700/50 transition-colors">
                             <div :style="{ backgroundColor: miembro.color }" class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                                 {{ miembro.iniciales }}
                             </div>
@@ -95,18 +119,9 @@
                     </div>
                 </div>
 
-                <!-- Botón volver al dashboard -->
-                <div class="p-4 border-t border-slate-800">
-                    <button @click="volverADashboard" class="w-full px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors flex items-center justify-center font-medium">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        Volver al Dashboard
-                    </button>
-                </div>
             </aside>
 
-            <!-- CONTENIDO PRINCIPAL - Tablero Kanban -->
+            <!-- CONTENIDO PRINCIPAL - Tablero Kanban (MANTENIDO) -->
             <main class="flex-1 overflow-hidden flex flex-col bg-slate-950">
                 <!-- Loading -->
                 <div v-if="loading" class="flex items-center justify-center h-full">
@@ -231,7 +246,7 @@
             </main>
         </div>
 
-        <!-- MODAL: Nueva/Editar Tarea -->
+        <!-- MODAL: Nueva/Editar Tarea (MANTENIDO) -->
         <div v-if="mostrarModalTarea" @click.self="cerrarModalTarea" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div class="bg-slate-800 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
                 <div class="sticky top-0 bg-slate-800 border-b border-slate-700 px-6 py-4 flex items-center justify-between z-10">
@@ -331,7 +346,7 @@
             </div>
         </div>
 
-        <!-- MODAL: Nueva Lista -->
+        <!-- MODAL: Nueva Lista (MANTENIDO) -->
         <div v-if="mostrarModalLista" @click.self="cerrarModalLista" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div class="bg-slate-800 rounded-lg w-full max-w-md shadow-2xl">
                 <div class="border-b border-slate-700 px-6 py-4 flex items-center justify-between">
@@ -451,6 +466,11 @@ const contarCompletadas = (lista) => {
     return lista.tareas.filter(t => t.completada).length
 }
 
+const handleLogout = () => {
+    userStore.logout()
+    router.push('/login')
+}
+
 // ==================== FUNCIONES DE CARGA ====================
 
 const cargarProyecto = async () => {
@@ -489,6 +509,24 @@ const cargarProyecto = async () => {
     }
 }
 
+// 🔥 FIX CORRECTO: Con tu endpoint y inicializando drag & drop
+// const cargarListasYTareas = async () => {
+//     try {
+//         // 🔥 USANDO TU ENDPOINT CORRECTO
+//         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/lists/proyecto/${proyecto.value.id}`)
+//         const data = await response.json()
+
+//         if (data.success) {
+//             listas.value = data.data
+            
+//             // 🔥 FIX 1: Inicializar drag & drop DESPUÉS de cargar
+//             await nextTick()
+//             inicializarDragAndDrop()
+//         }
+//     } catch (error) {
+//         console.error('Error al cargar listas:', error)
+//     }
+// }
 const cargarListasYTareas = async () => {
     try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/lists/project/${proyecto.value.id}`)
@@ -497,6 +535,7 @@ const cargarListasYTareas = async () => {
         if (data.success) {
             listas.value = data.data
             
+            // Inicializar SortableJS después de cargar las listas
             await nextTick()
             inicializarDragAndDrop()
         }
@@ -773,19 +812,33 @@ const toggleCompletada = async (tarea) => {
 
 // ==================== DRAG & DROP ====================
 
+// 🔥 FIX 2: Función mejorada para evitar duplicaciones
 const inicializarDragAndDrop = () => {
     const contenedores = document.querySelectorAll('[data-lista-id]')
     
     contenedores.forEach(contenedor => {
-        Sortable.create(contenedor, {
+        // Destruir instancia anterior si existe
+        if (contenedor._sortable) {
+            contenedor._sortable.destroy()
+        }
+
+        const sortableInstance = Sortable.create(contenedor, {
             group: 'tareas',
             animation: 150,
             ghostClass: 'sortable-ghost',
             dragClass: 'sortable-drag',
+            
             onEnd: async (evt) => {
                 const tareaId = parseInt(evt.item.dataset.tareaId)
                 const nuevaListaId = parseInt(evt.to.dataset.listaId)
                 const nuevoOrden = evt.newIndex
+                
+                // 🔥 DESHABILITAR todos los sortables durante el movimiento
+                contenedores.forEach(c => {
+                    if (c._sortable) {
+                        c._sortable.option('disabled', true)
+                    }
+                })
                 
                 try {
                     const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${tareaId}/move`, {
@@ -802,13 +855,44 @@ const inicializarDragAndDrop = () => {
                     const data = await response.json()
                     
                     if (data.success) {
-                        await cargarListasYTareas()
+                        // 🔥 Actualizar estado local sin recargar todo
+                        const listaAntigua = listas.value.find(l => 
+                            l.tareas && l.tareas.some(t => t.id === tareaId)
+                        )
+                        
+                        if (listaAntigua) {
+                            const tareaIndex = listaAntigua.tareas.findIndex(t => t.id === tareaId)
+                            const tarea = listaAntigua.tareas[tareaIndex]
+                            
+                            // Remover de lista antigua
+                            listaAntigua.tareas.splice(tareaIndex, 1)
+                            
+                            // Agregar a nueva lista
+                            const listaNueva = listas.value.find(l => l.id === nuevaListaId)
+                            if (listaNueva) {
+                                if (!listaNueva.tareas) listaNueva.tareas = []
+                                tarea.lista_id = nuevaListaId
+                                listaNueva.tareas.splice(nuevoOrden, 0, tarea)
+                            }
+                        }
                     }
                 } catch (error) {
                     console.error('Error al mover tarea:', error)
+                    // Si hay error, recargar para mantener consistencia
+                    await cargarListasYTareas()
+                } finally {
+                    // 🔥 RE-HABILITAR sortables después del movimiento
+                    contenedores.forEach(c => {
+                        if (c._sortable) {
+                            c._sortable.option('disabled', false)
+                        }
+                    })
                 }
             }
         })
+
+        // Guardar referencia
+        contenedor._sortable = sortableInstance
     })
 }
 
