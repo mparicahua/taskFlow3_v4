@@ -2,7 +2,6 @@
     <div class="min-h-screen flex">
         <div class="w-full lg:w-1/2 bg-slate-900 flex items-center justify-center p-8">
             <div class="max-w-md w-full space-y-8">
-                <!-- Botón de configuración -->
                 <div class="flex justify-end">
                     <button class="p-2 text-gray-400 hover:text-gray-300 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -14,7 +13,6 @@
                     </button>
                 </div>
 
-                <!-- Título -->
                 <div class="text-center">
                     <h2 class="text-3xl font-bold text-white mb-2">
                         Crear Cuenta
@@ -28,7 +26,6 @@
                 </div>
 
                 <div class="space-y-6">
-                    <!-- Botón de Google -->
                     <button @click="registerWithGoogle"
                         class="w-full flex justify-center items-center px-4 py-3 border border-gray-600 rounded-lg text-sm font-medium text-gray-300 bg-gray-800/50 hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200">
                         <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -44,7 +41,6 @@
                         Registrarse con Google
                     </button>
 
-                    <!-- Divisor -->
                     <div class="relative">
                         <div class="absolute inset-0 flex items-center">
                             <div class="w-full border-t border-gray-600"></div>
@@ -54,14 +50,14 @@
                         </div>
                     </div>
 
-                    <!-- Formulario de registro -->
                     <form @submit.prevent="handleRegister" class="space-y-6">
-                        <!-- Mensaje de error general -->
-                        <div v-if="registerError" class="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded-lg text-sm">
-                            {{ registerError }}
+                        <div v-if="registerError" class="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded-lg text-sm flex items-start">
+                            <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>{{ registerError }}</span>
                         </div>
 
-                        <!-- Campo Nombre -->
                         <div>
                             <label for="name" class="block text-sm font-medium text-gray-300 mb-2">
                                 Nombre completo
@@ -77,12 +73,12 @@
                                 <input id="name" v-model="form.name" type="text" required
                                     :class="{'border-red-500': errors.name}"
                                     class="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-600 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                    placeholder="Juan Pérez">
+                                    placeholder="Juan Pérez"
+                                    :disabled="isLoading">
                             </div>
                             <p v-if="errors.name" class="mt-1 text-sm text-red-400">{{ errors.name }}</p>
                         </div>
 
-                        <!-- Campo Email -->
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-300 mb-2">
                                 Email
@@ -91,12 +87,12 @@
                                 <input id="email" v-model="form.email" type="email" required
                                     :class="{'border-red-500': errors.email}"
                                     class="appearance-none relative block w-full px-3 py-3 pr-10 border border-gray-600 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                    placeholder="tu@ejemplo.com">
+                                    placeholder="tu@ejemplo.com"
+                                    :disabled="isLoading">
                             </div>
                             <p v-if="errors.email" class="mt-1 text-sm text-red-400">{{ errors.email }}</p>
                         </div>
 
-                        <!-- Campo Contraseña -->
                         <div>
                             <label for="password" class="block text-sm font-medium text-gray-300 mb-2">
                                 Contraseña
@@ -106,7 +102,8 @@
                                     required
                                     :class="{'border-red-500': errors.password}"
                                     class="appearance-none relative block w-full px-3 py-3 pr-10 border border-gray-600 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                    placeholder="••••••••">
+                                    placeholder="••••••••"
+                                    :disabled="isLoading">
                                 <button type="button" @click="showPassword = !showPassword"
                                     class="absolute inset-y-0 right-0 pr-3 flex items-center">
                                     <svg v-if="!showPassword" class="h-5 w-5 text-gray-400" fill="none"
@@ -126,7 +123,6 @@
                             <p v-if="errors.password" class="mt-1 text-sm text-red-400">{{ errors.password }}</p>
                         </div>
 
-                        <!-- Campo Confirmar Contraseña -->
                         <div>
                             <label for="confirmPassword" class="block text-sm font-medium text-gray-300 mb-2">
                                 Confirmar contraseña
@@ -136,7 +132,8 @@
                                     :type="showConfirmPassword ? 'text' : 'password'" required
                                     :class="{'border-red-500': errors.confirmPassword}"
                                     class="appearance-none relative block w-full px-3 py-3 pr-10 border border-gray-600 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                    placeholder="••••••••">
+                                    placeholder="••••••••"
+                                    :disabled="isLoading">
                                 <button type="button" @click="showConfirmPassword = !showConfirmPassword"
                                     class="absolute inset-y-0 right-0 pr-3 flex items-center">
                                     <svg v-if="!showConfirmPassword" class="h-5 w-5 text-gray-400" fill="none"
@@ -156,15 +153,20 @@
                             <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-400">{{ errors.confirmPassword }}</p>
                         </div>
 
-                        <!-- Botón de registro -->
                         <div>
                             <button type="submit" :disabled="isLoading"
                                 class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
-                                {{ isLoading ? 'Creando cuenta...' : 'Crear Cuenta' }}
+                                <span v-if="isLoading" class="flex items-center">
+                                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Creando cuenta...
+                                </span>
+                                <span v-else>Crear Cuenta</span>
                             </button>
                         </div>
 
-                        <!-- Términos y condiciones -->
                         <div class="text-center">
                             <p class="text-xs text-gray-400">
                                 Al continuar, aceptas nuestros
@@ -178,7 +180,6 @@
             </div>
         </div>
 
-        <!-- Panel derecho con branding -->
         <div class="hidden lg:flex lg:w-1/2 bg-blue-600 relative">
             <div class="flex items-center justify-center w-full">
                 <div class="text-center">
@@ -199,8 +200,12 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { useUserStore } from '../stores/userStore'
+import { useRouter } from 'vue-router'
 
-const emit = defineEmits(['switchToLogin', 'registerSuccess'])
+const emit = defineEmits(['switchToLogin'])
+const userStore = useUserStore()
+const router = useRouter()
 
 const form = reactive({
     name: '',
@@ -222,7 +227,6 @@ const isLoading = ref(false)
 const registerError = ref('')
 
 const validateForm = () => {
-    // Limpiar errores previos
     errors.name = ''
     errors.email = ''
     errors.password = ''
@@ -231,7 +235,6 @@ const validateForm = () => {
 
     let isValid = true
 
-    // Validar nombre
     if (!form.name.trim()) {
         errors.name = 'El nombre es requerido'
         isValid = false
@@ -240,7 +243,6 @@ const validateForm = () => {
         isValid = false
     }
 
-    // Validar email
     if (!form.email) {
         errors.email = 'El email es requerido'
         isValid = false
@@ -252,7 +254,6 @@ const validateForm = () => {
         }
     }
 
-    // Validar contraseña
     if (!form.password) {
         errors.password = 'La contraseña es requerida'
         isValid = false
@@ -261,7 +262,6 @@ const validateForm = () => {
         isValid = false
     }
 
-    // Validar confirmación de contraseña
     if (!form.confirmPassword) {
         errors.confirmPassword = 'Debes confirmar tu contraseña'
         isValid = false
@@ -280,30 +280,16 @@ const handleRegister = async () => {
     registerError.value = ''
 
     try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                nombre: form.name,
-                email: form.email,
-                password: form.password
-            })
-        })
+        const result = await userStore.register(form.name, form.email, form.password)
 
-        const data = await response.json()
-
-        if (data.success) {
-            // Registro exitoso - emitir evento con datos del usuario
-            emit('registerSuccess', data.user)
+        if (result.success) {
+            // Redirigir al dashboard
+            router.push('/dashboard')
         } else {
-            // Mostrar mensaje de error del servidor
-            registerError.value = data.message || 'Error al registrarse'
+            registerError.value = result.message || 'Error al registrarse'
         }
-
     } catch (error) {
-        console.error('Error de conexión:', error)
+        console.error('Error en registro:', error)
         registerError.value = 'Error de conexión con el servidor'
     } finally {
         isLoading.value = false
@@ -312,6 +298,6 @@ const handleRegister = async () => {
 
 const registerWithGoogle = () => {
     console.log('Registro con Google clickeado')
-    // Aquí iría la lógica de OAuth con Google
+    // TODO: Implementar OAuth
 }
 </script>

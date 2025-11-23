@@ -399,6 +399,7 @@
 import { ref, computed, onMounted, nextTick, watch, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
+import { api } from '../services/api'
 import Sortable from 'sortablejs'
 
 const router = useRouter()
@@ -407,10 +408,10 @@ const userStore = useUserStore()
 
 // Estados
 const proyecto = ref({
-    id: null,
-    nombre: '',
-    descripcion: '',
-    miembros: []
+  id: null,
+  nombre: '',
+  descripcion: '',
+  miembros: []
 })
 
 const listas = ref([])
@@ -423,23 +424,23 @@ const sortableInicializado = ref(false)
 
 // Computed properties para estadísticas
 const totalTareas = computed(() => {
-    return listas.value.reduce((total, lista) => {
-        return total + (lista.tareas ? lista.tareas.length : 0)
-    }, 0)
+  return listas.value.reduce((total, lista) => {
+    return total + (lista.tareas ? lista.tareas.length : 0)
+  }, 0)
 })
 
 const tareasCompletadas = computed(() => {
-    return listas.value.reduce((total, lista) => {
-        if (!lista.tareas) return total
-        return total + lista.tareas.filter(t => t.completada).length
-    }, 0)
+  return listas.value.reduce((total, lista) => {
+    if (!lista.tareas) return total
+    return total + lista.tareas.filter(t => t.completada).length
+  }, 0)
 })
 
 // Modal Lista
 const mostrarModalLista = ref(false)
 const formularioLista = ref({
-    nombre: '',
-    orden: 0
+  nombre: '',
+  orden: 0
 })
 const loadingLista = ref(false)
 const errorLista = ref('')
@@ -449,12 +450,12 @@ const mostrarModalTarea = ref(false)
 const modoEdicionTarea = ref(false)
 const tareaEditando = ref(null)
 const formularioTarea = ref({
-    lista_id: null,
-    titulo: '',
-    descripcion: '',
-    prioridad: 'Media',
-    fecha_vencimiento: null,
-    asignado_a: null
+  lista_id: null,
+  titulo: '',
+  descripcion: '',
+  prioridad: 'Media',
+  fecha_vencimiento: null,
+  asignado_a: null
 })
 const loadingTarea = ref(false)
 const errorTarea = ref('')
@@ -462,710 +463,448 @@ const errorTarea = ref('')
 // ==================== FUNCIONES DE UI ====================
 
 const toggleSidebar = () => {
-    sidebarOpen.value = !sidebarOpen.value
+  sidebarOpen.value = !sidebarOpen.value
 }
 
 const contarCompletadas = (lista) => {
-    if (!lista.tareas) return 0
-    return lista.tareas.filter(t => t.completada).length
+  if (!lista.tareas) return 0
+  return lista.tareas.filter(t => t.completada).length
 }
 
-const handleLogout = () => {
-    userStore.logout()
-    router.push('/login')
+const handleLogout = async () => {
+  await userStore.logout()
+  router.push('/login')
 }
 
 // ==================== FUNCIONES DE CARGA ====================
 
 const cargarProyecto = async () => {
-    loading.value = true
-    try {
-        const proyectoId = route.params.id
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/projects/user/${userStore.currentUser.id}`)
-        const data = await response.json()
+  loading.value = true
+  try {
+    const proyectoId = route.params.id
+    const data = await api.projects.getByUser(userStore.currentUser.id)
 
-        if (data.success) {
-            const proyectoEncontrado = data.data.find(p => p.id === parseInt(proyectoId))
+    if (data.success) {
+      const proyectoEncontrado = data.data.find(p => p.id === parseInt(proyectoId))
 
-            if (proyectoEncontrado) {
-                proyecto.value = {
-                    id: proyectoEncontrado.id,
-                    nombre: proyectoEncontrado.nombre,
-                    descripcion: proyectoEncontrado.descripcion,
-                    miembros: proyectoEncontrado.proyecto_usuario_rol.map(pur => ({
-                        id: pur.usuario.id,
-                        nombre: pur.usuario.nombre,
-                        iniciales: pur.usuario.iniciales,
-                        color: pur.usuario.color_avatar
-                    }))
-                }
-                
-                await cargarListasYTareas()
-            } else {
-                router.push('/dashboard')
-            }
+      if (proyectoEncontrado) {
+        proyecto.value = {
+          id: proyectoEncontrado.id,
+          nombre: proyectoEncontrado.nombre,
+          descripcion: proyectoEncontrado.descripcion,
+          miembros: proyectoEncontrado.proyecto_usuario_rol.map(pur => ({
+            id: pur.usuario.id,
+            nombre: pur.usuario.nombre,
+            iniciales: pur.usuario.iniciales,
+            color: pur.usuario.color_avatar
+          }))
         }
-    } catch (error) {
-        console.error('Error al cargar proyecto:', error)
+        
+        await cargarListasYTareas()
+      } else {
         router.push('/dashboard')
-    } finally {
-        loading.value = false
+      }
     }
+  } catch (error) {
+    console.error('Error al cargar proyecto:', error)
+    if (error.response?.status === 401) {
+      router.push('/login')
+    } else {
+      router.push('/dashboard')
+    }
+  } finally {
+    loading.value = false
+  }
 }
 
 const cargarListasYTareas = async () => {
-    try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/lists/project/${proyecto.value.id}`)
-        const data = await response.json()
+  try {
+    const data = await api.lists.getByProject(proyecto.value.id)
 
-        if (data.success) {
-            listas.value = data.data
-        }
-    } catch (error) {
-        console.error('Error al cargar listas:', error)
+    if (data.success) {
+      listas.value = data.data
     }
+  } catch (error) {
+    console.error('Error al cargar listas:', error)
+  }
 }
 
-// ==================== 🔥 WATCH MEJORADO ====================
+// ==================== WATCH MEJORADO ====================
 
 watch(
-    () => listas.value,
-    async (newListas) => {
-        // Esperar a que Vue termine de renderizar
-        await nextTick()
-        await nextTick() // Doble nextTick para asegurar renderizado completo
-        
-        // Verificar que existan contenedores en el DOM
-        const contenedores = document.querySelectorAll('[data-lista-id]')
-        
-        if (contenedores.length === 0) return
-        
-        // Si ya está inicializado y hay listas, reinicializar
-        if (sortableInicializado.value && newListas.length > 0) {
-            destruirSortables()
-            inicializarDragAndDrop()
-        }
-        // Si no está inicializado y hay listas, inicializar por primera vez
-        else if (!sortableInicializado.value && newListas.length > 0) {
-            inicializarDragAndDrop()
-            sortableInicializado.value = true
-        }
-    },
-    { deep: true, immediate: false }
+  () => listas.value,
+  async (newListas) => {
+    await nextTick()
+    await nextTick()
+    
+    const contenedores = document.querySelectorAll('[data-lista-id]')
+    
+    if (contenedores.length === 0) return
+    
+    if (sortableInicializado.value && newListas.length > 0) {
+      destruirSortables()
+      inicializarDragAndDrop()
+    } else if (!sortableInicializado.value && newListas.length > 0) {
+      inicializarDragAndDrop()
+      sortableInicializado.value = true
+    }
+  },
+  { deep: true, immediate: false }
 )
 
 // ==================== FUNCIONES DE LISTAS ====================
 
 const abrirModalLista = () => {
-    formularioLista.value = { nombre: '', orden: 0 }
-    errorLista.value = ''
-    mostrarModalLista.value = true
+  formularioLista.value = { nombre: '', orden: 0 }
+  errorLista.value = ''
+  mostrarModalLista.value = true
 }
 
 const cerrarModalLista = () => {
-    mostrarModalLista.value = false
-    formularioLista.value = { nombre: '', orden: 0 }
-    errorLista.value = ''
+  mostrarModalLista.value = false
+  formularioLista.value = { nombre: '', orden: 0 }
+  errorLista.value = ''
 }
 
 const crearLista = async () => {
-    if (!formularioLista.value.nombre.trim()) {
-        errorLista.value = 'El nombre de la lista es requerido'
-        return
+  if (!formularioLista.value.nombre.trim()) {
+    errorLista.value = 'El nombre de la lista es requerido'
+    return
+  }
+
+  loadingLista.value = true
+  errorLista.value = ''
+
+  try {
+    const data = await api.lists.create({
+      proyecto_id: proyecto.value.id,
+      nombre: formularioLista.value.nombre,
+      orden: listas.value.length
+    })
+
+    if (data.success) {
+      listas.value.push({ ...data.data, tareas: [] })
+      cerrarModalLista()
+    } else {
+      errorLista.value = data.message || 'Error al crear la lista'
     }
-
-    loadingLista.value = true
-    errorLista.value = ''
-
-    try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/lists`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                proyecto_id: proyecto.value.id,
-                nombre: formularioLista.value.nombre,
-                orden: listas.value.length
-            })
-        })
-
-        const data = await response.json()
-
-        if (data.success) {
-            listas.value.push({ ...data.data, tareas: [] })
-            cerrarModalLista()
-        } else {
-            errorLista.value = data.message || 'Error al crear la lista'
-        }
-    } catch (error) {
-        console.error('Error:', error)
-        errorLista.value = 'Error de conexión con el servidor'
-    } finally {
-        loadingLista.value = false
-    }
+  } catch (error) {
+    console.error('Error:', error)
+    errorLista.value = error.response?.data?.message || 'Error de conexión con el servidor'
+  } finally {
+    loadingLista.value = false
+  }
 }
 
 const eliminarLista = async (lista) => {
-    if (!confirm(`¿Estás seguro de eliminar la lista "${lista.nombre}"? Las tareas serán archivadas.`)) {
-        return
+  if (!confirm(`¿Estás seguro de eliminar la lista "${lista.nombre}"? Las tareas serán archivadas.`)) {
+    return
+  }
+
+  try {
+    const data = await api.lists.delete(lista.id)
+
+    if (data.success) {
+      listas.value = listas.value.filter(l => l.id !== lista.id)
+    } else {
+      alert(data.message || 'Error al eliminar la lista')
     }
-
-    try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/lists/${lista.id}`, {
-            method: 'DELETE'
-        })
-
-        const data = await response.json()
-
-        if (data.success) {
-            listas.value = listas.value.filter(l => l.id !== lista.id)
-        } else {
-            alert(data.message || 'Error al eliminar la lista')
-        }
-    } catch (error) {
-        console.error('Error:', error)
-        alert('Error de conexión con el servidor')
-    }
+  } catch (error) {
+    console.error('Error:', error)
+    alert(error.response?.data?.message || 'Error de conexión con el servidor')
+  }
 }
 
 // ==================== FUNCIONES DE TAREAS ====================
 
 const abrirModalTarea = (listaId) => {
-    modoEdicionTarea.value = false
-    tareaEditando.value = null
-    formularioTarea.value = {
-        lista_id: listaId,
-        titulo: '',
-        descripcion: '',
-        prioridad: 'Media',
-        fecha_vencimiento: null,
-        asignado_a: null
-    }
-    errorTarea.value = ''
-    mostrarModalTarea.value = true
+  modoEdicionTarea.value = false
+  tareaEditando.value = null
+  formularioTarea.value = {
+    lista_id: listaId,
+    titulo: '',
+    descripcion: '',
+    prioridad: 'Media',
+    fecha_vencimiento: null,
+    asignado_a: null
+  }
+  errorTarea.value = ''
+  mostrarModalTarea.value = true
 }
 
 const abrirModalEditarTarea = (tarea) => {
-    modoEdicionTarea.value = true
-    tareaEditando.value = tarea
-    formularioTarea.value = {
-        lista_id: tarea.lista_id,
-        titulo: tarea.titulo,
-        descripcion: tarea.descripcion || '',
-        prioridad: tarea.prioridad,
-        fecha_vencimiento: tarea.fecha_vencimiento ? tarea.fecha_vencimiento.split('T')[0] : null,
-        asignado_a: tarea.asignado_a
-    }
-    errorTarea.value = ''
-    mostrarModalTarea.value = true
+  modoEdicionTarea.value = true
+  tareaEditando.value = tarea
+  formularioTarea.value = {
+    lista_id: tarea.lista_id,
+    titulo: tarea.titulo,
+    descripcion: tarea.descripcion || '',
+    prioridad: tarea.prioridad,
+    fecha_vencimiento: tarea.fecha_vencimiento ? tarea.fecha_vencimiento.split('T')[0] : null,
+    asignado_a: tarea.asignado_a
+  }
+  errorTarea.value = ''
+  mostrarModalTarea.value = true
 }
 
 const cerrarModalTarea = () => {
-    mostrarModalTarea.value = false
-    modoEdicionTarea.value = false
-    tareaEditando.value = null
-    formularioTarea.value = {
-        lista_id: null,
-        titulo: '',
-        descripcion: '',
-        prioridad: 'Media',
-        fecha_vencimiento: null,
-        asignado_a: null
-    }
-    errorTarea.value = ''
+  mostrarModalTarea.value = false
+  modoEdicionTarea.value = false
+  tareaEditando.value = null
+  formularioTarea.value = {
+    lista_id: null,
+    titulo: '',
+    descripcion: '',
+    prioridad: 'Media',
+    fecha_vencimiento: null,
+    asignado_a: null
+  }
+  errorTarea.value = ''
 }
 
 const crearTarea = async () => {
-    if (!formularioTarea.value.titulo.trim()) {
-        errorTarea.value = 'El título de la tarea es requerido'
-        return
-    }
+  if (!formularioTarea.value.titulo.trim()) {
+    errorTarea.value = 'El título de la tarea es requerido'
+    return
+  }
 
-    loadingTarea.value = true
-    errorTarea.value = ''
+  loadingTarea.value = true
+  errorTarea.value = ''
 
-    try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formularioTarea.value)
-        })
+  try {
+    const data = await api.tasks.create(formularioTarea.value)
 
-        const data = await response.json()
-
-        if (data.success) {
-            const lista = listas.value.find(l => l.id === formularioTarea.value.lista_id)
-            if (lista) {
-                if (!lista.tareas) {
-                    lista.tareas = []
-                }
-                lista.tareas.push(data.data)
-            }
-            
-            cerrarModalTarea()
-        } else {
-            errorTarea.value = data.message || 'Error al crear la tarea'
+    if (data.success) {
+      const lista = listas.value.find(l => l.id === formularioTarea.value.lista_id)
+      if (lista) {
+        if (!lista.tareas) {
+          lista.tareas = []
         }
-    } catch (error) {
-        console.error('Error:', error)
-        errorTarea.value = 'Error de conexión con el servidor'
-    } finally {
-        loadingTarea.value = false
+        lista.tareas.push(data.data)
+      }
+      
+      cerrarModalTarea()
+    } else {
+      errorTarea.value = data.message || 'Error al crear la tarea'
     }
+  } catch (error) {
+    console.error('Error:', error)
+    errorTarea.value = error.response?.data?.message || 'Error de conexión con el servidor'
+  } finally {
+    loadingTarea.value = false
+  }
 }
 
 const actualizarTarea = async () => {
-    if (!formularioTarea.value.titulo.trim()) {
-        errorTarea.value = 'El título de la tarea es requerido'
-        return
-    }
+  if (!formularioTarea.value.titulo.trim()) {
+    errorTarea.value = 'El título de la tarea es requerido'
+    return
+  }
 
-    loadingTarea.value = true
-    errorTarea.value = ''
+  loadingTarea.value = true
+  errorTarea.value = ''
 
-    try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${tareaEditando.value.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                titulo: formularioTarea.value.titulo,
-                descripcion: formularioTarea.value.descripcion,
-                prioridad: formularioTarea.value.prioridad,
-                fecha_vencimiento: formularioTarea.value.fecha_vencimiento,
-                asignado_a: formularioTarea.value.asignado_a
-            })
-        })
+  try {
+    const data = await api.tasks.update(tareaEditando.value.id, {
+      titulo: formularioTarea.value.titulo,
+      descripcion: formularioTarea.value.descripcion,
+      prioridad: formularioTarea.value.prioridad,
+      fecha_vencimiento: formularioTarea.value.fecha_vencimiento,
+      asignado_a: formularioTarea.value.asignado_a
+    })
 
-        const data = await response.json()
-
-        if (data.success) {
-            const lista = listas.value.find(l => l.id === tareaEditando.value.lista_id)
-            if (lista && lista.tareas) {
-                const index = lista.tareas.findIndex(t => t.id === tareaEditando.value.id)
-                if (index !== -1) {
-                    lista.tareas[index] = data.data
-                }
-            }
-            
-            cerrarModalTarea()
-        } else {
-            errorTarea.value = data.message || 'Error al actualizar la tarea'
+    if (data.success) {
+      const lista = listas.value.find(l => l.id === tareaEditando.value.lista_id)
+      if (lista && lista.tareas) {
+        const index = lista.tareas.findIndex(t => t.id === tareaEditando.value.id)
+        if (index !== -1) {
+          lista.tareas[index] = data.data
         }
-    } catch (error) {
-        console.error('Error:', error)
-        errorTarea.value = 'Error de conexión con el servidor'
-    } finally {
-        loadingTarea.value = false
+      }
+      
+      cerrarModalTarea()
+    } else {
+      errorTarea.value = data.message || 'Error al actualizar la tarea'
     }
+  } catch (error) {
+    console.error('Error:', error)
+    errorTarea.value = error.response?.data?.message || 'Error de conexión con el servidor'
+  } finally {
+    loadingTarea.value = false
+  }
 }
 
 const eliminarTarea = async () => {
-    if (!confirm('¿Estás seguro de eliminar esta tarea?')) {
-        return
+  if (!confirm('¿Estás seguro de eliminar esta tarea?')) {
+    return
+  }
+
+  try {
+    const data = await api.tasks.delete(tareaEditando.value.id)
+
+    if (data.success) {
+      const lista = listas.value.find(l => l.id === tareaEditando.value.lista_id)
+      if (lista && lista.tareas) {
+        lista.tareas = lista.tareas.filter(t => t.id !== tareaEditando.value.id)
+      }
+      
+      cerrarModalTarea()
+    } else {
+      alert(data.message || 'Error al eliminar la tarea')
     }
-
-    try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${tareaEditando.value.id}`, {
-            method: 'DELETE'
-        })
-
-        const data = await response.json()
-
-        if (data.success) {
-            const lista = listas.value.find(l => l.id === tareaEditando.value.lista_id)
-            if (lista && lista.tareas) {
-                lista.tareas = lista.tareas.filter(t => t.id !== tareaEditando.value.id)
-            }
-            
-            cerrarModalTarea()
-        } else {
-            alert(data.message || 'Error al eliminar la tarea')
-        }
-    } catch (error) {
-        console.error('Error:', error)
-        alert('Error de conexión con el servidor')
-    }
+  } catch (error) {
+    console.error('Error:', error)
+    alert(error.response?.data?.message || 'Error de conexión con el servidor')
+  }
 }
 
 const toggleCompletada = async (tarea) => {
-    try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${tarea.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                completada: !tarea.completada
-            })
-        })
+  try {
+    const data = await api.tasks.update(tarea.id, {
+      completada: !tarea.completada
+    })
 
-        const data = await response.json()
-
-        if (data.success) {
-            tarea.completada = !tarea.completada
-        }
-    } catch (error) {
-        console.error('Error:', error)
+    if (data.success) {
+      tarea.completada = !tarea.completada
     }
+  } catch (error) {
+    console.error('Error:', error)
+  }
 }
 
 // ==================== DRAG & DROP ====================
 
-// const inicializarDragAndDrop = () => {
-//     // Limpiar instancias anteriores primero
-//     destruirSortables()
-    
-//     const contenedores = document.querySelectorAll('[data-lista-id]')
-    
-//     if (contenedores.length === 0) {
-//         console.warn('No se encontraron contenedores para inicializar Sortable')
-//         return
-//     }
-    
-//     contenedores.forEach(contenedor => {
-//         try {
-//             const sortableInstance = Sortable.create(contenedor, {
-//                 group: 'tareas',
-//                 animation: 150,
-//                 ghostClass: 'sortable-ghost',
-//                 dragClass: 'sortable-drag',
-//                 forceFallback: true, // 🔥 NUEVO: Forzar fallback para mayor compatibilidad
-                
-//                 onEnd: async (evt) => {
-//                     const tareaId = parseInt(evt.item.dataset.tareaId)
-//                     const nuevaListaId = parseInt(evt.to.dataset.listaId)
-//                     const nuevoOrden = evt.newIndex
-                    
-//                     try {
-//                         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${tareaId}/move`, {
-//                             method: 'PUT',
-//                             headers: {
-//                                 'Content-Type': 'application/json',
-//                             },
-//                             body: JSON.stringify({
-//                                 nueva_lista_id: nuevaListaId,
-//                                 nuevo_orden: nuevoOrden
-//                             })
-//                         })
-                        
-//                         const data = await response.json()
-                        
-//                         if (data.success) {
-//                             // Actualizar estado local sin recargar
-//                             const listaAntigua = listas.value.find(l => 
-//                                 l.tareas && l.tareas.some(t => t.id === tareaId)
-//                             )
-                            
-//                             if (listaAntigua) {
-//                                 const tareaIndex = listaAntigua.tareas.findIndex(t => t.id === tareaId)
-//                                 if (tareaIndex !== -1) {
-//                                     const tarea = listaAntigua.tareas[tareaIndex]
-                                    
-//                                     // Remover de lista antigua
-//                                     listaAntigua.tareas.splice(tareaIndex, 1)
-                                    
-//                                     // Agregar a nueva lista
-//                                     const listaNueva = listas.value.find(l => l.id === nuevaListaId)
-//                                     if (listaNueva) {
-//                                         if (!listaNueva.tareas) listaNueva.tareas = []
-//                                         tarea.lista_id = nuevaListaId
-//                                         listaNueva.tareas.splice(nuevoOrden, 0, tarea)
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                     } catch (error) {
-//                         console.error('Error al mover tarea:', error)
-//                         // Si hay error, recargar datos
-//                         await cargarListasYTareas()
-//                     }
-//                 }
-//             })
-
-//             // Guardar instancia
-//             sortableInstances.value.push(sortableInstance)
-//         } catch (error) {
-//             console.error('Error al crear instancia Sortable:', error)
-//         }
-//     })
-    
-//     console.log(`✅ Sortable inicializado en ${sortableInstances.value.length} contenedores`)
-// }
-// const inicializarDragAndDrop = () => {
-//     // Limpiar instancias anteriores primero
-//     destruirSortables()
-    
-//     const contenedores = document.querySelectorAll('[data-lista-id]')
-    
-//     if (contenedores.length === 0) {
-//         console.warn('No se encontraron contenedores para inicializar Sortable')
-//         return
-//     }
-    
-//     contenedores.forEach(contenedor => {
-//         try {
-//             const sortableInstance = Sortable.create(contenedor, {
-//                 group: 'tareas',
-//                 animation: 150,
-//                 ghostClass: 'sortable-ghost',
-//                 dragClass: 'sortable-drag',
-//                 forceFallback: true,
-                
-//                 onEnd: async (evt) => {
-//                     const tareaId = parseInt(evt.item.dataset.tareaId)
-//                     const listaOrigenId = parseInt(evt.from.dataset.listaId)
-//                     const listaDestinoId = parseInt(evt.to.dataset.listaId)
-//                     const nuevoOrden = evt.newIndex
-//                     const ordenAnterior = evt.oldIndex
-                    
-//                     // 🔥 FIX: Si es la misma lista Y el orden no cambió, no hacer nada
-//                     if (listaOrigenId === listaDestinoId && nuevoOrden === ordenAnterior) {
-//                         return
-//                     }
-                    
-//                     try {
-//                         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${tareaId}/move`, {
-//                             method: 'PUT',
-//                             headers: {
-//                                 'Content-Type': 'application/json',
-//                             },
-//                             body: JSON.stringify({
-//                                 nueva_lista_id: listaDestinoId,
-//                                 nuevo_orden: nuevoOrden
-//                             })
-//                         })
-                        
-//                         const data = await response.json()
-                        
-//                         if (data.success) {
-//                             // 🔥 FIX: Distinguir entre movimiento en misma lista vs listas diferentes
-//                             if (listaOrigenId === listaDestinoId) {
-//                                 // ✅ MISMA LISTA: Solo reordenar el array sin agregar/quitar
-//                                 // Sortable ya movió el DOM, solo sincronizamos el array de Vue
-//                                 const lista = listas.value.find(l => l.id === listaOrigenId)
-                                
-//                                 if (lista && lista.tareas) {
-//                                     // Encontrar la tarea
-//                                     const tarea = lista.tareas.find(t => t.id === tareaId)
-                                    
-//                                     if (tarea) {
-//                                         // Remover de posición anterior
-//                                         const indexAnterior = lista.tareas.findIndex(t => t.id === tareaId)
-//                                         lista.tareas.splice(indexAnterior, 1)
-                                        
-//                                         // Insertar en nueva posición
-//                                         lista.tareas.splice(nuevoOrden, 0, tarea)
-//                                     }
-//                                 }
-//                             } else {
-//                                 // ✅ LISTAS DIFERENTES: Mover entre listas
-//                                 const listaOrigen = listas.value.find(l => l.id === listaOrigenId)
-//                                 const listaDestino = listas.value.find(l => l.id === listaDestinoId)
-                                
-//                                 if (listaOrigen && listaOrigen.tareas) {
-//                                     const tareaIndex = listaOrigen.tareas.findIndex(t => t.id === tareaId)
-                                    
-//                                     if (tareaIndex !== -1) {
-//                                         const tarea = listaOrigen.tareas[tareaIndex]
-                                        
-//                                         // Remover de lista origen
-//                                         listaOrigen.tareas.splice(tareaIndex, 1)
-                                        
-//                                         // Agregar a lista destino
-//                                         if (listaDestino) {
-//                                             if (!listaDestino.tareas) listaDestino.tareas = []
-//                                             tarea.lista_id = listaDestinoId
-//                                             listaDestino.tareas.splice(nuevoOrden, 0, tarea)
-//                                         }
-//                                     }
-//                                 }
-//                             }
-//                         } else {
-//                             // Si falla, recargar para mantener consistencia
-//                             await cargarListasYTareas()
-//                         }
-//                     } catch (error) {
-//                         console.error('Error al mover tarea:', error)
-//                         // Si hay error, recargar datos
-//                         await cargarListasYTareas()
-//                     }
-//                 }
-//             })
-
-//             // Guardar instancia
-//             sortableInstances.value.push(sortableInstance)
-//         } catch (error) {
-//             console.error('Error al crear instancia Sortable:', error)
-//         }
-//     })
-    
-//     console.log(`✅ Sortable inicializado en ${sortableInstances.value.length} contenedores`)
-// }
 const inicializarDragAndDrop = () => {
-    // Limpiar instancias anteriores primero
-    destruirSortables()
-    
-    const contenedores = document.querySelectorAll('[data-lista-id]')
-    
-    if (contenedores.length === 0) {
-        console.warn('No se encontraron contenedores para inicializar Sortable')
-        return
-    }
-    
-    contenedores.forEach(contenedor => {
-        try {
-            const sortableInstance = Sortable.create(contenedor, {
-                group: 'tareas',
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                dragClass: 'sortable-drag',
-                forceFallback: true,
-                
-                // 🔥 NUEVO: Prevenir que Vue re-renderice durante el drag
-                onStart: (evt) => {
-                    // Deshabilitar el watch temporalmente
-                    // No hacemos nada aquí, pero podemos agregar lógica si es necesario
-                },
-                
-                onEnd: async (evt) => {
-                    const tareaId = parseInt(evt.item.dataset.tareaId)
-                    const listaOrigenId = parseInt(evt.from.dataset.listaId)
-                    const listaDestinoId = parseInt(evt.to.dataset.listaId)
-                    const nuevoOrden = evt.newIndex
-                    const ordenAnterior = evt.oldIndex
-                    
-                    // Si es la misma lista Y el orden no cambió, no hacer nada
-                    if (listaOrigenId === listaDestinoId && nuevoOrden === ordenAnterior) {
-                        return
-                    }
-                    
-                    // 🔥 CRÍTICO: Prevenir que Vue interfiera con el DOM de Sortable
-                    // Primero actualizar el backend, LUEGO actualizar Vue
-                    
-                    try {
-                        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${tareaId}/move`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                nueva_lista_id: listaDestinoId,
-                                nuevo_orden: nuevoOrden
-                            })
-                        })
-                        
-                        const data = await response.json()
-                        
-                        if (data.success) {
-                            // 🔥 SOLUCIÓN: Usar nextTick y actualizar sin triggerar re-render
-                            await nextTick()
-                            
-                            if (listaOrigenId === listaDestinoId) {
-                                // ✅ MISMA LISTA
-                                const lista = listas.value.find(l => l.id === listaOrigenId)
-                                
-                                if (lista && lista.tareas) {
-                                    // 🔥 Crear una copia del array para evitar reactividad durante la manipulación
-                                    const tareas = [...lista.tareas]
-                                    const tareaIndex = tareas.findIndex(t => t.id === tareaId)
-                                    
-                                    if (tareaIndex !== -1) {
-                                        // Remover de posición anterior
-                                        const [tarea] = tareas.splice(tareaIndex, 1)
-                                        // Insertar en nueva posición
-                                        tareas.splice(nuevoOrden, 0, tarea)
-                                        
-                                        // 🔥 Actualizar el array completo de una sola vez
-                                        lista.tareas = tareas
-                                    }
-                                }
-                            } else {
-                                // ✅ LISTAS DIFERENTES
-                                const listaOrigen = listas.value.find(l => l.id === listaOrigenId)
-                                const listaDestino = listas.value.find(l => l.id === listaDestinoId)
-                                
-                                if (listaOrigen && listaOrigen.tareas) {
-                                    const tareaIndex = listaOrigen.tareas.findIndex(t => t.id === tareaId)
-                                    
-                                    if (tareaIndex !== -1) {
-                                        // Crear copias de los arrays
-                                        const tareasOrigen = [...listaOrigen.tareas]
-                                        const [tarea] = tareasOrigen.splice(tareaIndex, 1)
-                                        
-                                        // Actualizar lista origen
-                                        listaOrigen.tareas = tareasOrigen
-                                        
-                                        // Actualizar lista destino
-                                        if (listaDestino) {
-                                            const tareasDestino = listaDestino.tareas ? [...listaDestino.tareas] : []
-                                            tarea.lista_id = listaDestinoId
-                                            tareasDestino.splice(nuevoOrden, 0, tarea)
-                                            listaDestino.tareas = tareasDestino
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            // Si falla, revertir el cambio visual y recargar
-                            console.error('Error al mover tarea en backend:', data.message)
-                            await cargarListasYTareas()
-                        }
-                    } catch (error) {
-                        console.error('Error al mover tarea:', error)
-                        // Si hay error, recargar para mantener consistencia
-                        await cargarListasYTareas()
-                    }
-                }
+  destruirSortables()
+  
+  const contenedores = document.querySelectorAll('[data-lista-id]')
+  
+  if (contenedores.length === 0) {
+    console.warn('No se encontraron contenedores para inicializar Sortable')
+    return
+  }
+  
+  contenedores.forEach(contenedor => {
+    try {
+      const sortableInstance = Sortable.create(contenedor, {
+        group: 'tareas',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        dragClass: 'sortable-drag',
+        forceFallback: true,
+        
+        onStart: (evt) => {
+          // No hacer nada
+        },
+        
+        onEnd: async (evt) => {
+          const tareaId = parseInt(evt.item.dataset.tareaId)
+          const listaOrigenId = parseInt(evt.from.dataset.listaId)
+          const listaDestinoId = parseInt(evt.to.dataset.listaId)
+          const nuevoOrden = evt.newIndex
+          const ordenAnterior = evt.oldIndex
+          
+          if (listaOrigenId === listaDestinoId && nuevoOrden === ordenAnterior) {
+            return
+          }
+          
+          try {
+            const data = await api.tasks.move(tareaId, {
+              nueva_lista_id: listaDestinoId,
+              nuevo_orden: nuevoOrden
             })
-
-            // Guardar instancia
-            sortableInstances.value.push(sortableInstance)
-        } catch (error) {
-            console.error('Error al crear instancia Sortable:', error)
-        }
-    })
-    
-    console.log(`✅ Sortable inicializado en ${sortableInstances.value.length} contenedores`)
-}
-const destruirSortables = () => {
-    sortableInstances.value.forEach(instance => {
-        try {
-            if (instance && typeof instance.destroy === 'function') {
-                instance.destroy()
+            
+            if (data.success) {
+              await nextTick()
+              
+              if (listaOrigenId === listaDestinoId) {
+                const lista = listas.value.find(l => l.id === listaOrigenId)
+                
+                if (lista && lista.tareas) {
+                  const tareas = [...lista.tareas]
+                  const tareaIndex = tareas.findIndex(t => t.id === tareaId)
+                  
+                  if (tareaIndex !== -1) {
+                    const [tarea] = tareas.splice(tareaIndex, 1)
+                    tareas.splice(nuevoOrden, 0, tarea)
+                    lista.tareas = tareas
+                  }
+                }
+              } else {
+                const listaOrigen = listas.value.find(l => l.id === listaOrigenId)
+                const listaDestino = listas.value.find(l => l.id === listaDestinoId)
+                
+                if (listaOrigen && listaOrigen.tareas) {
+                  const tareaIndex = listaOrigen.tareas.findIndex(t => t.id === tareaId)
+                  
+                  if (tareaIndex !== -1) {
+                    const tareasOrigen = [...listaOrigen.tareas]
+                    const [tarea] = tareasOrigen.splice(tareaIndex, 1)
+                    listaOrigen.tareas = tareasOrigen
+                    
+                    if (listaDestino) {
+                      const tareasDestino = listaDestino.tareas ? [...listaDestino.tareas] : []
+                      tarea.lista_id = listaDestinoId
+                      tareasDestino.splice(nuevoOrden, 0, tarea)
+                      listaDestino.tareas = tareasDestino
+                    }
+                  }
+                }
+              }
+            } else {
+              console.error('Error al mover tarea en backend:', data.message)
+              await cargarListasYTareas()
             }
-        } catch (error) {
-            console.error('Error al destruir instancia Sortable:', error)
+          } catch (error) {
+            console.error('Error al mover tarea:', error)
+            await cargarListasYTareas()
+          }
         }
-    })
-    sortableInstances.value = []
+      })
+
+      sortableInstances.value.push(sortableInstance)
+    } catch (error) {
+      console.error('Error al crear instancia Sortable:', error)
+    }
+  })
+  
+  console.log(`✅ Sortable inicializado en ${sortableInstances.value.length} contenedores`)
+}
+
+const destruirSortables = () => {
+  sortableInstances.value.forEach(instance => {
+    try {
+      if (instance && typeof instance.destroy === 'function') {
+        instance.destroy()
+      }
+    } catch (error) {
+      console.error('Error al destruir instancia Sortable:', error)
+    }
+  })
+  sortableInstances.value = []
 }
 
 // ==================== UTILIDADES ====================
 
 const formatearFecha = (fecha) => {
-    if (!fecha) return ''
-    const date = new Date(fecha)
-    return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+  if (!fecha) return ''
+  const date = new Date(fecha)
+  return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
 }
 
 const volverADashboard = () => {
-    router.push('/dashboard')
+  router.push('/dashboard')
 }
 
 // ==================== LIFECYCLE ====================
 
 onMounted(async () => {
-    await cargarProyecto()
+  await cargarProyecto()
 })
 
 onBeforeUnmount(() => {
-    destruirSortables()
-    sortableInicializado.value = false
+  destruirSortables()
+  sortableInicializado.value = false
 })
 </script>
 

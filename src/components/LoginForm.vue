@@ -78,7 +78,8 @@
               <div class="relative">
                 <input id="email" v-model="form.email" type="email" required
                   class="appearance-none relative block w-full px-3 py-3 pr-10 border border-gray-600 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="tu@ejemplo.com">
+                  placeholder="tu@ejemplo.com"
+                  :disabled="isLoading">
               </div>
             </div>
 
@@ -90,7 +91,8 @@
               <div class="relative">
                 <input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" required
                   class="appearance-none relative block w-full px-3 py-3 pr-10 border border-gray-600 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="••••••••">
+                  placeholder="••••••••"
+                  :disabled="isLoading">
                 <button type="button" @click="showPassword = !showPassword"
                   class="absolute inset-y-0 right-0 pr-3 flex items-center">
                   <svg v-if="!showPassword" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
@@ -114,20 +116,16 @@
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
                     </g>
                   </svg>
-
-
-
-                  
                 </button>
               </div>
-              <p v-if="errors.password" class="mt-1 text-sm text-red-400">{{ errors.password }}</p>
             </div>
 
 
             <div class="flex items-center justify-between">
               <div class="flex items-center">
                 <input id="remember-me" v-model="form.rememberMe" type="checkbox"
-                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-800 rounded">
+                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-800 rounded"
+                  :disabled="isLoading">
                 <label for="remember-me" class="ml-2 block text-sm text-gray-300">
                   Recordarme
                 </label>
@@ -141,8 +139,11 @@
 
 
             <div v-if="loginError"
-              class="bg-red-900/30 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm">
-              {{ loginError }}
+              class="bg-red-900/30 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm flex items-start">
+              <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{{ loginError }}</span>
             </div>
 
 
@@ -162,8 +163,6 @@
               </button>
             </div>
 
-            
-
             <div class="text-center">
               <p class="text-xs text-gray-400">
                 Al continuar, aceptas nuestros
@@ -181,8 +180,12 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { useUserStore } from '../stores/userStore'
+import { useRouter } from 'vue-router'
 
-const emit = defineEmits(['switchToRegister', 'loginSuccess'])
+const emit = defineEmits(['switchToRegister'])
+const userStore = useUserStore()
+const router = useRouter()
 
 const form = reactive({
   email: '',
@@ -190,61 +193,30 @@ const form = reactive({
   rememberMe: false
 })
 
-const errors = reactive({
-  email: '',
-  password: ''
-})
-
 const showPassword = ref(false)
 const isLoading = ref(false)
 const loginError = ref('')
 
-const validateForm = () => {
-  errors.email = ''
-  errors.password = ''
-  loginError.value = ''
-
-  let isValid = true
-
-  if (!form.password) {
-    errors.password = 'La contraseña es requerida'
-    isValid = false
-  } else if (form.password.length < 6) {
-    errors.password = 'La contraseña debe tener al menos 6 caracteres'
-    isValid = false
-  }
-
-  return isValid
-}
-
 const handleLogin = async () => {
-  if (!validateForm()) return
+  if (!form.email || !form.password) {
+    loginError.value = 'Por favor completa todos los campos'
+    return
+  }
 
   isLoading.value = true
   loginError.value = ''
 
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: form.email,
-        password: form.password
-      })
-    })
+    const result = await userStore.login(form.email, form.password)
 
-    const data = await response.json()
-
-    if (data.success) {
-      emit('loginSuccess', data.user)
+    if (result.success) {
+      // Redirigir al dashboard
+      router.push('/dashboard')
     } else {
-      loginError.value = data.message || 'Error al iniciar sesión'
+      loginError.value = result.message || 'Error al iniciar sesión'
     }
-
   } catch (error) {
-    console.error('Error de conexión:', error)
+    console.error('Error en login:', error)
     loginError.value = 'Error de conexión con el servidor'
   } finally {
     isLoading.value = false
@@ -252,16 +224,7 @@ const handleLogin = async () => {
 }
 
 const loginWithGoogle = () => {
-  console.log('Login con Google')
+  console.log('Login con Google clickeado')
+  // TODO: Implementar OAuth
 }
-
-// const goToDashboard = () => {
-//   emit('loginSuccess', {
-//     id: 1,
-//     email: 'usuario@test.com',
-//     nombre: 'Usuario Demo',
-//     iniciales: 'UD',
-//     color_avatar: '#3B82F6'
-//   })
-// }
 </script>

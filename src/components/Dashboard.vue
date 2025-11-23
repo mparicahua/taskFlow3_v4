@@ -369,10 +369,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
+import { api } from '../services/api'
 
 const router = useRouter()
 const userStore = useUserStore()
-
 
 const proyectos = ref([])
 const loading = ref(false)
@@ -383,14 +383,12 @@ const modoEdicion = ref(false)
 const proyectoEditando = ref(null)
 const sidebarOpen = ref(false)
 
-
 const usuarios = ref([])
 const roles = ref([])
 const usuariosDisponibles = ref([])
 const miembrosProyecto = ref([])
 const miembrosSeleccionados = ref([])
 const colaborativoAnterior = ref(true)
-
 
 const formularioProyecto = reactive({
   nombre: '',
@@ -409,17 +407,18 @@ onMounted(() => {
   cargarRoles()
 })
 
-
 const cargarProyectos = async () => {
   loading.value = true
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/projects/user/${userStore.currentUser.id}`)
-    const data = await response.json()
+    const data = await api.projects.getByUser(userStore.currentUser.id)
     if (data.success) {
       proyectos.value = data.data
     }
   } catch (error) {
     console.error('Error al cargar proyectos:', error)
+    if (error.response?.status === 401) {
+      router.push('/login')
+    }
   } finally {
     loading.value = false
   }
@@ -427,8 +426,7 @@ const cargarProyectos = async () => {
 
 const cargarUsuarios = async () => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users`)
-    const data = await response.json()
+    const data = await api.users.getAll()
     if (data.success) {
       usuarios.value = data.data
     }
@@ -439,8 +437,7 @@ const cargarUsuarios = async () => {
 
 const cargarRoles = async () => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/roles`)
-    const data = await response.json()
+    const data = await api.users.getRoles()
     if (data.success) {
       roles.value = data.data
     }
@@ -456,8 +453,7 @@ const cargarUsuariosDisponibles = async (proyectoId = null) => {
     usuariosDisponibles.value = usuariosDisponibles.value.filter(u => !idsSeleccionados.includes(u.id))
   } else {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/disponibles/${proyectoId}`)
-      const data = await response.json()
+      const data = await api.users.getAvailable(proyectoId)
       if (data.success) {
         usuariosDisponibles.value = data.data
       }
@@ -497,11 +493,7 @@ const toggleColaborativo = async () => {
   if (modoEdicion.value && colaborativoAnterior.value && !nuevoValor) {
     if (confirm('¿Desactivar proyecto colaborativo? Esto eliminará a todos los miembros excepto al propietario.')) {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/projects/${proyectoEditando.value.id}/miembros`, {
-          method: 'DELETE'
-        })
-        
-        const data = await response.json()
+        const data = await api.projects.removeAllMembers(proyectoEditando.value.id)
         
         if (data.success) {
           formularioProyecto.es_colaborativo = nuevoValor
@@ -513,7 +505,7 @@ const toggleColaborativo = async () => {
         }
       } catch (error) {
         console.error('Error:', error)
-        alert('Error al eliminar miembros')
+        alert(error.response?.data?.message || 'Error al eliminar miembros')
         return
       }
     } else {
@@ -527,7 +519,6 @@ const toggleColaborativo = async () => {
     cargarUsuariosDisponibles()
   }
 }
-
 
 const agregarMiembroLista = () => {
   if (!nuevoMiembro.usuario_id || !nuevoMiembro.rol_id) return
@@ -555,16 +546,10 @@ const agregarMiembroProyecto = async () => {
   if (!proyectoEditando.value) return
   
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/projects/${proyectoEditando.value.id}/miembros`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        usuario_id: parseInt(nuevoMiembro.usuario_id),
-        rol_id: parseInt(nuevoMiembro.rol_id)
-      })
+    const data = await api.projects.addMember(proyectoEditando.value.id, {
+      usuario_id: parseInt(nuevoMiembro.usuario_id),
+      rol_id: parseInt(nuevoMiembro.rol_id)
     })
-    
-    const data = await response.json()
     
     if (data.success) {
       miembrosProyecto.value.push(data.data)
@@ -576,7 +561,7 @@ const agregarMiembroProyecto = async () => {
     }
   } catch (error) {
     console.error('Error:', error)
-    alert('Error al agregar miembro')
+    alert(error.response?.data?.message || 'Error al agregar miembro')
   }
 }
 
@@ -585,12 +570,7 @@ const eliminarMiembro = async (usuarioId) => {
   if (!confirm('¿Eliminar este miembro del proyecto?')) return
   
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/projects/${proyectoEditando.value.id}/miembros/${usuarioId}`,
-      { method: 'DELETE' }
-    )
-    
-    const data = await response.json()
+    const data = await api.projects.removeMember(proyectoEditando.value.id, usuarioId)
     
     if (data.success) {
       miembrosProyecto.value = miembrosProyecto.value.filter(m => m.usuario.id !== usuarioId)
@@ -600,7 +580,7 @@ const eliminarMiembro = async (usuarioId) => {
     }
   } catch (error) {
     console.error('Error:', error)
-    alert('Error al eliminar miembro')
+    alert(error.response?.data?.message || 'Error al eliminar miembro')
   }
 }
 
@@ -618,31 +598,20 @@ const crearProyecto = async () => {
   errorModal.value = ''
   
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/projects`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nombre: formularioProyecto.nombre,
-        descripcion: formularioProyecto.descripcion,
-        es_colaborativo: formularioProyecto.es_colaborativo,
-        usuario_id: userStore.currentUser.id
-      })
+    const data = await api.projects.create({
+      nombre: formularioProyecto.nombre,
+      descripcion: formularioProyecto.descripcion,
+      es_colaborativo: formularioProyecto.es_colaborativo
     })
-    
-    const data = await response.json()
     
     if (data.success) {
       const nuevoProyecto = data.data
       
       if (formularioProyecto.es_colaborativo && miembrosSeleccionados.value.length > 0) {
         for (const miembro of miembrosSeleccionados.value) {
-          await fetch(`${import.meta.env.VITE_API_URL}/api/projects/${nuevoProyecto.id}/miembros`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              usuario_id: miembro.usuario_id,
-              rol_id: miembro.rol_id
-            })
+          await api.projects.addMember(nuevoProyecto.id, {
+            usuario_id: miembro.usuario_id,
+            rol_id: miembro.rol_id
           })
         }
       }
@@ -654,7 +623,7 @@ const crearProyecto = async () => {
     }
   } catch (error) {
     console.error('Error:', error)
-    errorModal.value = 'Error de conexión'
+    errorModal.value = error.response?.data?.message || 'Error de conexión'
   } finally {
     loadingModal.value = false
   }
@@ -665,18 +634,11 @@ const editarProyecto = async () => {
   errorModal.value = ''
   
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/projects/${proyectoEditando.value.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nombre: formularioProyecto.nombre,
-        descripcion: formularioProyecto.descripcion,
-        es_colaborativo: formularioProyecto.es_colaborativo,
-        usuario_id: userStore.currentUser.id
-      })
+    const data = await api.projects.update(proyectoEditando.value.id, {
+      nombre: formularioProyecto.nombre,
+      descripcion: formularioProyecto.descripcion,
+      es_colaborativo: formularioProyecto.es_colaborativo
     })
-    
-    const data = await response.json()
     
     if (data.success) {
       await cargarProyectos()
@@ -686,7 +648,7 @@ const editarProyecto = async () => {
     }
   } catch (error) {
     console.error('Error:', error)
-    errorModal.value = 'Error de conexión'
+    errorModal.value = error.response?.data?.message || 'Error de conexión'
   } finally {
     loadingModal.value = false
   }
@@ -698,15 +660,7 @@ const confirmarEliminar = async (proyecto) => {
   }
   
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/projects/${proyecto.id}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        usuario_id: userStore.currentUser.id
-      })
-    })
-    
-    const data = await response.json()
+    const data = await api.projects.delete(proyecto.id)
     
     if (data.success) {
       proyectos.value = proyectos.value.filter(p => p.id !== proyecto.id)
@@ -715,7 +669,7 @@ const confirmarEliminar = async (proyecto) => {
     }
   } catch (error) {
     console.error('Error:', error)
-    alert('Error de conexión')
+    alert(error.response?.data?.message || 'Error de conexión')
   }
 }
 
@@ -735,9 +689,9 @@ const closeModal = () => {
   nuevoMiembro.rol_id = ''
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
   if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-    userStore.logout()
+    await userStore.logout()
     router.push('/login')
   }
 }

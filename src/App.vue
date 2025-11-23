@@ -12,13 +12,8 @@ import { useUserStore } from './stores/userStore'
 const router = useRouter()
 const userStore = useUserStore()
 
-
 onMounted(() => {
+  // Restaurar sesión desde localStorage
   userStore.restoreSession()
-  // userStore.restoreSession()
-  
-  // if (userStore.isLoggedIn && router.currentRoute.value.path === '/') {
-  //   router.push('/dashboard')
-  // }
 })
 </script>

@@ -1,3 +1,4 @@
+// src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
 
@@ -39,24 +40,37 @@ const router = createRouter({
   routes
 })
 
-
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
   
-
+  // Restaurar sesión si hay tokens
   if (!userStore.isLoggedIn) {
     userStore.restoreSession()
   }
   
-
+  // Verificar token si está autenticado
+  if (userStore.isLoggedIn && to.meta.requiresAuth) {
+    try {
+      const isValid = await userStore.verifyToken()
+      if (!isValid) {
+        userStore.clearSession()
+        return next('/login')
+      }
+    } catch (error) {
+      console.error('Error al verificar token:', error)
+      userStore.clearSession()
+      return next('/login')
+    }
+  }
+  
+  // Proteger rutas autenticadas
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {
     next('/login')
   }
-
+  // Redirigir usuarios autenticados fuera de login
   else if (to.meta.requiresGuest && userStore.isLoggedIn) {
     next('/dashboard')
   }
-
   else {
     next()
   }
