@@ -152,12 +152,7 @@
                 </button>
               </div>
             </div>
-            <div class="mb-4">
-              <div class="flex items-center text-sm text-gray-400">
-                <span class="mr-4">5 todos</span>
-                <span class="text-green-400">3 completados</span>
-              </div>
-            </div>
+            
             <div class="flex -space-x-2">
               <div
                 v-for="miembro in proyecto.proyecto_usuario_rol.slice(0, 3)"
