@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { api } from '../services/api'
+import { socketService } from '../services/socket'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -19,7 +20,6 @@ export const useUserStore = defineStore('user', {
   },
 
   actions: {
-    // ==================== LOGIN ====================
     async login(email, password) {
       this.loading = true
       this.error = null
@@ -28,17 +28,25 @@ export const useUserStore = defineStore('user', {
         const response = await api.auth.login(email, password)
 
         if (response.success) {
-          // Guardar tokens
           localStorage.setItem('accessToken', response.accessToken)
           localStorage.setItem('refreshToken', response.refreshToken)
           
-          // Guardar usuario
           this.user = response.user
           this.isAuthenticated = true
           
-          // Guardar en localStorage para persistencia
           localStorage.setItem('user', JSON.stringify(response.user))
           localStorage.setItem('isAuthenticated', 'true')
+
+          // ✨ CONECTAR WEBSOCKET
+          socketService.connect(response.accessToken)
+          
+          // ✨ CONFIGURAR LISTENERS (importación dinámica para evitar ciclos)
+          setTimeout(() => {
+            import('./projectStore').then(module => {
+              const projectStore = module.useProjectStore()
+              projectStore.setupSocketListeners()
+            })
+          }, 100)
 
           return { success: true }
         } else {
@@ -53,7 +61,6 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // ==================== REGISTER ====================
     async register(nombre, email, password) {
       this.loading = true
       this.error = null
@@ -62,17 +69,25 @@ export const useUserStore = defineStore('user', {
         const response = await api.auth.register(nombre, email, password)
 
         if (response.success) {
-          // Guardar tokens
           localStorage.setItem('accessToken', response.accessToken)
           localStorage.setItem('refreshToken', response.refreshToken)
           
-          // Guardar usuario
           this.user = response.user
           this.isAuthenticated = true
           
-          // Guardar en localStorage
           localStorage.setItem('user', JSON.stringify(response.user))
           localStorage.setItem('isAuthenticated', 'true')
+
+          // ✨ CONECTAR WEBSOCKET
+          socketService.connect(response.accessToken)
+          
+          // ✨ CONFIGURAR LISTENERS (importación dinámica)
+          setTimeout(() => {
+            import('./projectStore').then(module => {
+              const projectStore = module.useProjectStore()
+              projectStore.setupSocketListeners()
+            })
+          }, 100)
 
           return { success: true }
         } else {
@@ -87,7 +102,6 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // ==================== LOGOUT ====================
     async logout() {
       this.loading = true
 
@@ -98,19 +112,24 @@ export const useUserStore = defineStore('user', {
           try {
             await api.auth.logout(refreshToken)
           } catch (error) {
-            // Si falla el logout en el servidor, igual limpiamos localmente
             console.warn('Error al hacer logout en servidor:', error)
           }
         }
       } catch (error) {
         console.error('Error en logout:', error)
       } finally {
-        // Limpiar estado local
+        // ✨ LIMPIAR STORE DE PROYECTOS (importación dinámica)
+        import('./projectStore').then(module => {
+          const projectStore = module.useProjectStore()
+          projectStore.clearProjects()
+        })
+        
+        socketService.disconnect()
+        
         this.user = null
         this.isAuthenticated = false
         this.error = null
         
-        // Limpiar localStorage
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('user')
@@ -120,7 +139,6 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // ==================== LOGOUT ALL (Cerrar todas las sesiones) ====================
     async logoutAll() {
       this.loading = true
 
@@ -129,12 +147,18 @@ export const useUserStore = defineStore('user', {
       } catch (error) {
         console.error('Error en logout all:', error)
       } finally {
-        // Limpiar estado local
+        // ✨ LIMPIAR STORE DE PROYECTOS (importación dinámica)
+        import('./projectStore').then(module => {
+          const projectStore = module.useProjectStore()
+          projectStore.clearProjects()
+        })
+        
+        socketService.disconnect()
+        
         this.user = null
         this.isAuthenticated = false
         this.error = null
         
-        // Limpiar localStorage
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('user')
@@ -144,7 +168,6 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // ==================== RESTORE SESSION ====================
     restoreSession() {
       try {
         const savedUser = localStorage.getItem('user')
@@ -155,9 +178,20 @@ export const useUserStore = defineStore('user', {
         if (savedUser && isAuth === 'true' && accessToken && refreshToken) {
           this.user = JSON.parse(savedUser)
           this.isAuthenticated = true
+          
+          // ✨ RECONECTAR WEBSOCKET
+          socketService.connect(accessToken)
+          
+          // ✨ CONFIGURAR LISTENERS (importación dinámica)
+          setTimeout(() => {
+            import('./projectStore').then(module => {
+              const projectStore = module.useProjectStore()
+              projectStore.setupSocketListeners()
+            })
+          }, 100)
+          
           return true
         } else {
-          // Si falta algo, limpiar todo
           this.clearSession()
           return false
         }
@@ -168,13 +202,11 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // ==================== VERIFY TOKEN ====================
     async verifyToken() {
       try {
         const response = await api.auth.verify()
         
         if (response.success) {
-          // Actualizar datos del usuario si cambiaron
           this.user = response.user
           localStorage.setItem('user', JSON.stringify(response.user))
           return true
@@ -189,8 +221,9 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // ==================== CLEAR SESSION ====================
     clearSession() {
+      socketService.disconnect()
+      
       this.user = null
       this.isAuthenticated = false
       this.error = null
@@ -201,13 +234,11 @@ export const useUserStore = defineStore('user', {
       localStorage.removeItem('isAuthenticated')
     },
 
-    // ==================== UPDATE USER ====================
     updateUser(userData) {
       this.user = { ...this.user, ...userData }
       localStorage.setItem('user', JSON.stringify(this.user))
     },
 
-    // ==================== CLEAR ERROR ====================
     clearError() {
       this.error = null
     }

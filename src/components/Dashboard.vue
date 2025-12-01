@@ -366,23 +366,30 @@
 
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
+import { useProjectStore } from '../stores/projectStore' // ✨ IMPORTAR STORE
 import { api } from '../services/api'
 
 const router = useRouter()
 const userStore = useUserStore()
+const projectStore = useProjectStore() // ✨ USAR STORE
 
-const proyectos = ref([])
-const loading = ref(false)
+// ✨ USAR COMPUTED EN LUGAR DE REF PARA PROYECTOS
+const proyectos = computed(() => projectStore.allProjects)
+const loading = computed(() => projectStore.loading)
+
+const sidebarOpen = ref(false)
+
+// Estados del modal
 const showModal = ref(false)
 const loadingModal = ref(false)
 const errorModal = ref('')
 const modoEdicion = ref(false)
 const proyectoEditando = ref(null)
-const sidebarOpen = ref(false)
 
+// Estados de usuarios y roles
 const usuarios = ref([])
 const roles = ref([])
 const usuariosDisponibles = ref([])
@@ -390,16 +397,20 @@ const miembrosProyecto = ref([])
 const miembrosSeleccionados = ref([])
 const colaborativoAnterior = ref(true)
 
+// Formulario de proyecto
 const formularioProyecto = reactive({
   nombre: '',
   descripcion: '',
   es_colaborativo: true
 })
 
+// Nuevo miembro
 const nuevoMiembro = reactive({
   usuario_id: '',
   rol_id: ''
 })
+
+// ==================== LIFECYCLE ====================
 
 onMounted(() => {
   cargarProyectos()
@@ -407,20 +418,16 @@ onMounted(() => {
   cargarRoles()
 })
 
+// ==================== FUNCIONES DE CARGA ====================
+
 const cargarProyectos = async () => {
-  loading.value = true
   try {
-    const data = await api.projects.getByUser(userStore.currentUser.id)
-    if (data.success) {
-      proyectos.value = data.data
-    }
+    await projectStore.fetchProjects(userStore.currentUser.id)
   } catch (error) {
     console.error('Error al cargar proyectos:', error)
     if (error.response?.status === 401) {
       router.push('/login')
     }
-  } finally {
-    loading.value = false
   }
 }
 
@@ -463,6 +470,8 @@ const cargarUsuariosDisponibles = async (proyectoId = null) => {
   }
 }
 
+// ==================== MODAL DE PROYECTO ====================
+
 const abrirModalCrear = () => {
   modoEdicion.value = false
   proyectoEditando.value = null
@@ -485,6 +494,22 @@ const abrirModalEditar = async (proyecto) => {
   miembrosProyecto.value = proyecto.proyecto_usuario_rol || []
   await cargarUsuariosDisponibles(proyecto.id)
   showModal.value = true
+}
+
+const closeModal = () => {
+  showModal.value = false
+  formularioProyecto.nombre = ''
+  formularioProyecto.descripcion = ''
+  formularioProyecto.es_colaborativo = true
+  colaborativoAnterior.value = true
+  errorModal.value = ''
+  modoEdicion.value = false
+  proyectoEditando.value = null
+  miembrosProyecto.value = []
+  miembrosSeleccionados.value = []
+  usuariosDisponibles.value = []
+  nuevoMiembro.usuario_id = ''
+  nuevoMiembro.rol_id = ''
 }
 
 const toggleColaborativo = async () => {
@@ -519,6 +544,8 @@ const toggleColaborativo = async () => {
     cargarUsuariosDisponibles()
   }
 }
+
+// ==================== GESTIÓN DE MIEMBROS ====================
 
 const agregarMiembroLista = () => {
   if (!nuevoMiembro.usuario_id || !nuevoMiembro.rol_id) return
@@ -593,20 +620,24 @@ const removerMiembroSeleccionado = (index) => {
   }
 }
 
+// ==================== CRUD DE PROYECTOS ====================
+
 const crearProyecto = async () => {
   loadingModal.value = true
   errorModal.value = ''
   
   try {
-    const data = await api.projects.create({
+    // ✨ USAR EL STORE
+    const result = await projectStore.createProject({
       nombre: formularioProyecto.nombre,
       descripcion: formularioProyecto.descripcion,
       es_colaborativo: formularioProyecto.es_colaborativo
     })
     
-    if (data.success) {
-      const nuevoProyecto = data.data
+    if (result.success) {
+      const nuevoProyecto = result.data
       
+      // Si hay miembros seleccionados, agregarlos
       if (formularioProyecto.es_colaborativo && miembrosSeleccionados.value.length > 0) {
         for (const miembro of miembrosSeleccionados.value) {
           await api.projects.addMember(nuevoProyecto.id, {
@@ -616,10 +647,7 @@ const crearProyecto = async () => {
         }
       }
       
-      await cargarProyectos()
       closeModal()
-    } else {
-      errorModal.value = data.message || 'Error al crear el proyecto'
     }
   } catch (error) {
     console.error('Error:', error)
@@ -634,18 +662,14 @@ const editarProyecto = async () => {
   errorModal.value = ''
   
   try {
-    const data = await api.projects.update(proyectoEditando.value.id, {
+    // ✨ USAR EL STORE
+    await projectStore.updateProject(proyectoEditando.value.id, {
       nombre: formularioProyecto.nombre,
       descripcion: formularioProyecto.descripcion,
       es_colaborativo: formularioProyecto.es_colaborativo
     })
     
-    if (data.success) {
-      await cargarProyectos()
-      closeModal()
-    } else {
-      errorModal.value = data.message || 'Error al actualizar el proyecto'
-    }
+    closeModal()
   } catch (error) {
     console.error('Error:', error)
     errorModal.value = error.response?.data?.message || 'Error de conexión'
@@ -660,34 +684,15 @@ const confirmarEliminar = async (proyecto) => {
   }
   
   try {
-    const data = await api.projects.delete(proyecto.id)
-    
-    if (data.success) {
-      proyectos.value = proyectos.value.filter(p => p.id !== proyecto.id)
-    } else {
-      alert(data.message || 'Error al eliminar el proyecto')
-    }
+    // ✨ USAR EL STORE
+    await projectStore.deleteProject(proyecto.id)
   } catch (error) {
     console.error('Error:', error)
     alert(error.response?.data?.message || 'Error de conexión')
   }
 }
 
-const closeModal = () => {
-  showModal.value = false
-  formularioProyecto.nombre = ''
-  formularioProyecto.descripcion = ''
-  formularioProyecto.es_colaborativo = true
-  colaborativoAnterior.value = true
-  errorModal.value = ''
-  modoEdicion.value = false
-  proyectoEditando.value = null
-  miembrosProyecto.value = []
-  miembrosSeleccionados.value = []
-  usuariosDisponibles.value = []
-  nuevoMiembro.usuario_id = ''
-  nuevoMiembro.rol_id = ''
-}
+// ==================== NAVEGACIÓN ====================
 
 const handleLogout = async () => {
   if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
