@@ -61,6 +61,7 @@
         </nav>
       </div>
     </transition>
+    
     <div class="flex-1 flex flex-col">
       <header class="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-4 md:px-6">
         <button @click="sidebarOpen = true" class="md:hidden text-white p-2">
@@ -173,7 +174,55 @@
           </div>
         </div>
       </main>
+
+      <!-- ✨ BANNER DE NOTIFICACIONES (NUEVO) -->
+      <transition name="slide-up">
+        <div v-if="showNotificationBanner" 
+             class="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-xl shadow-2xl z-50 max-w-md border border-blue-500/50">
+          <div class="flex items-start space-x-4">
+            <!-- Icono -->
+            <div class="flex-shrink-0 w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+            </div>
+            
+            <!-- Contenido -->
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-lg mb-1">Habilita las Notificaciones</p>
+              <p class="text-sm text-blue-100 mb-3 leading-relaxed">
+                Recibe actualizaciones en tiempo real de tus proyectos y colaboradores
+              </p>
+              
+              <!-- Botones -->
+              <div class="flex items-center space-x-2">
+                <button 
+                  @click="enableNotifications" 
+                  class="px-4 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all transform hover:scale-105 shadow-md text-sm">
+                  Activar
+                </button>
+                <button 
+                  @click="dismissNotificationBanner" 
+                  class="px-4 py-2 text-white hover:bg-white/10 rounded-lg transition-colors text-sm">
+                  Ahora no
+                </button>
+              </div>
+            </div>
+            
+            <!-- Botón cerrar -->
+            <button 
+              @click="dismissNotificationBanner" 
+              class="flex-shrink-0 text-white/70 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </transition>
     </div>
+
+    <!-- MODAL: CREAR/EDITAR PROYECTO -->
     <div v-if="showModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="closeModal">
       <div class="bg-slate-800 rounded-lg p-6 w-full max-w-2xl border border-slate-700 max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-6">
@@ -364,18 +413,24 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
-import { useProjectStore } from '../stores/projectStore' // ✨ IMPORTAR STORE
+import { useProjectStore } from '../stores/projectStore'
+import { notificationService } from '../services/notifications' // ✨ IMPORT
 import { api } from '../services/api'
 
 const router = useRouter()
 const userStore = useUserStore()
-const projectStore = useProjectStore() // ✨ USAR STORE
+const projectStore = useProjectStore()
 
 // ✨ USAR COMPUTED EN LUGAR DE REF PARA PROYECTOS
 const proyectos = computed(() => projectStore.allProjects)
 const loading = computed(() => projectStore.loading)
 
 const sidebarOpen = ref(false)
+
+// ✨ ESTADOS DE NOTIFICACIONES (NUEVO)
+const notificationsEnabled = ref(false)
+const notificationsSupported = ref(false)
+const showNotificationBanner = ref(false)
 
 // Estados del modal
 const showModal = ref(false)
@@ -407,11 +462,58 @@ const nuevoMiembro = reactive({
 
 // ==================== LIFECYCLE ====================
 
-onMounted(() => {
-  cargarProyectos()
+onMounted(async () => {
+  await cargarProyectos()
   cargarUsuarios()
   cargarRoles()
+  
+  // ✨ VERIFICAR SOPORTE Y PERMISOS DE NOTIFICACIONES
+  notificationsSupported.value = notificationService.isSupported()
+  notificationsEnabled.value = notificationService.hasPermission()
+  
+  // Mostrar banner si las notificaciones están soportadas pero no habilitadas
+  // Y si el usuario no lo ha descartado antes
+  const bannerDismissed = localStorage.getItem('notificationBannerDismissed')
+  showNotificationBanner.value = notificationsSupported.value && 
+                                  !notificationsEnabled.value && 
+                                  !bannerDismissed
+  
+  console.log('🔔 Estado de notificaciones:', {
+    supported: notificationsSupported.value,
+    enabled: notificationsEnabled.value,
+    showBanner: showNotificationBanner.value
+  })
 })
+
+// ==================== FUNCIONES DE NOTIFICACIONES (NUEVO) ====================
+
+const enableNotifications = async () => {
+  const granted = await notificationService.requestPermission()
+  if (granted) {
+    notificationsEnabled.value = true
+    showNotificationBanner.value = false
+    localStorage.removeItem('notificationBannerDismissed') // Limpiar flag
+    console.log('✅ Notificaciones habilitadas')
+  } else {
+    alert('No se pudieron habilitar las notificaciones. Verifica los permisos de tu navegador.')
+  }
+}
+
+const dismissNotificationBanner = () => {
+  showNotificationBanner.value = false
+  // Guardar que el usuario descartó el banner
+  localStorage.setItem('notificationBannerDismissed', 'true')
+  console.log('🔕 Banner de notificaciones descartado')
+}
+
+const testNotification = async () => {
+  if (!notificationsEnabled.value) {
+    alert('Primero habilita las notificaciones')
+    return
+  }
+  
+  await notificationService.testNotification()
+}
 
 // ==================== FUNCIONES DE CARGA ====================
 
@@ -713,5 +815,21 @@ const abrirProyecto = (proyecto) => {
 
 .slide-leave-to {
   transform: translateX(-100%);
+}
+
+/* ✨ ANIMACIÓN PARA EL BANNER DE NOTIFICACIONES (NUEVO) */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.slide-up-enter-from {
+  transform: translateY(100px);
+  opacity: 0;
+}
+
+.slide-up-leave-to {
+  transform: translateY(100px);
+  opacity: 0;
 }
 </style>

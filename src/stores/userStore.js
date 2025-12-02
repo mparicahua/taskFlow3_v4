@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { api } from '../services/api'
 import { socketService } from '../services/socket'
+import { notificationService } from '../services/notifications' // ✨ IMPORT
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -40,13 +41,17 @@ export const useUserStore = defineStore('user', {
           // ✨ CONECTAR WEBSOCKET
           socketService.connect(response.accessToken)
           
-          // ✨ CONFIGURAR LISTENERS (importación dinámica para evitar ciclos)
+          // ✨ CONFIGURAR LISTENERS DE PROYECTOS
           setTimeout(() => {
             import('./projectStore').then(module => {
               const projectStore = module.useProjectStore()
               projectStore.setupSocketListeners()
             })
           }, 100)
+
+          // ✨ INICIALIZAR NOTIFICACIONES
+          await notificationService.initialize()
+          console.log('🔔 Notificaciones inicializadas')
 
           return { success: true }
         } else {
@@ -81,13 +86,17 @@ export const useUserStore = defineStore('user', {
           // ✨ CONECTAR WEBSOCKET
           socketService.connect(response.accessToken)
           
-          // ✨ CONFIGURAR LISTENERS (importación dinámica)
+          // ✨ CONFIGURAR LISTENERS DE PROYECTOS
           setTimeout(() => {
             import('./projectStore').then(module => {
               const projectStore = module.useProjectStore()
               projectStore.setupSocketListeners()
             })
           }, 100)
+
+          // ✨ INICIALIZAR NOTIFICACIONES
+          await notificationService.initialize()
+          console.log('🔔 Notificaciones inicializadas')
 
           return { success: true }
         } else {
@@ -118,13 +127,17 @@ export const useUserStore = defineStore('user', {
       } catch (error) {
         console.error('Error en logout:', error)
       } finally {
-        // ✨ LIMPIAR STORE DE PROYECTOS (importación dinámica)
+        // ✨ LIMPIAR STORE DE PROYECTOS
         import('./projectStore').then(module => {
           const projectStore = module.useProjectStore()
           projectStore.clearProjects()
         })
         
+        // ✨ DESCONECTAR WEBSOCKET
         socketService.disconnect()
+        
+        // ✨ CERRAR NOTIFICACIONES
+        notificationService.closeAll()
         
         this.user = null
         this.isAuthenticated = false
@@ -147,13 +160,17 @@ export const useUserStore = defineStore('user', {
       } catch (error) {
         console.error('Error en logout all:', error)
       } finally {
-        // ✨ LIMPIAR STORE DE PROYECTOS (importación dinámica)
+        // ✨ LIMPIAR STORE DE PROYECTOS
         import('./projectStore').then(module => {
           const projectStore = module.useProjectStore()
           projectStore.clearProjects()
         })
         
+        // ✨ DESCONECTAR WEBSOCKET
         socketService.disconnect()
+        
+        // ✨ CERRAR NOTIFICACIONES
+        notificationService.closeAll()
         
         this.user = null
         this.isAuthenticated = false
@@ -182,13 +199,17 @@ export const useUserStore = defineStore('user', {
           // ✨ RECONECTAR WEBSOCKET
           socketService.connect(accessToken)
           
-          // ✨ CONFIGURAR LISTENERS (importación dinámica)
+          // ✨ CONFIGURAR LISTENERS DE PROYECTOS
           setTimeout(() => {
             import('./projectStore').then(module => {
               const projectStore = module.useProjectStore()
               projectStore.setupSocketListeners()
             })
           }, 100)
+          
+          // ✨ INICIALIZAR NOTIFICACIONES
+          notificationService.initialize()
+          console.log('🔔 Notificaciones restauradas')
           
           return true
         } else {
@@ -222,7 +243,11 @@ export const useUserStore = defineStore('user', {
     },
 
     clearSession() {
+      // ✨ DESCONECTAR WEBSOCKET
       socketService.disconnect()
+      
+      // ✨ CERRAR NOTIFICACIONES
+      notificationService.closeAll()
       
       this.user = null
       this.isAuthenticated = false

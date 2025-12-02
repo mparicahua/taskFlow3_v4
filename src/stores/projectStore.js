@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { api } from '../services/api'
 import { socketService } from '../services/socket'
+import { notificationService } from '../services/notifications' // ✨ IMPORT
 
 export const useProjectStore = defineStore('projects', {
   state: () => ({
@@ -25,21 +26,27 @@ export const useProjectStore = defineStore('projects', {
 
       console.log('🎧 Configurando listeners de Socket en ProjectStore')
 
-      // Proyecto creado
-      socketService.on('project:created', (data) => {
+      // ✨ EVENTO: Proyecto Creado
+      socketService.on('project:created', async (data) => {
         console.log('📩 [STORE] Proyecto creado recibido:', data)
         
         const existe = this.projects.find(p => p.id === data.project.id)
         if (!existe) {
           this.projects.unshift(data.project)
           console.log('✅ [STORE] Proyecto agregado a la lista')
+          
+          // ✨ MOSTRAR NOTIFICACIÓN
+          await notificationService.notifyProjectCreated(
+            data.project.nombre,
+            data.createdBy?.nombre || 'Alguien'
+          )
         } else {
           console.log('⚠️ [STORE] Proyecto ya existe, ignorando')
         }
       })
 
-      // Proyecto actualizado
-      socketService.on('project:updated', (data) => {
+      // ✨ EVENTO: Proyecto Actualizado
+      socketService.on('project:updated', async (data) => {
         console.log('📩 [STORE] Proyecto actualizado recibido:', data)
         
         const index = this.projects.findIndex(p => p.id === data.project.id)
@@ -47,19 +54,28 @@ export const useProjectStore = defineStore('projects', {
           // Actualizar manteniendo la reactividad
           this.projects[index] = { ...this.projects[index], ...data.project }
           console.log('✅ [STORE] Proyecto actualizado en la lista')
+          
+          // ✨ MOSTRAR NOTIFICACIÓN
+          await notificationService.notifyProjectUpdated(data.project.nombre)
         }
       })
 
-      // Proyecto eliminado
-      socketService.on('project:deleted', (data) => {
+      // ✨ EVENTO: Proyecto Eliminado
+      socketService.on('project:deleted', async (data) => {
         console.log('📩 [STORE] Proyecto eliminado recibido:', data)
         
+        const proyecto = this.projects.find(p => p.id === data.projectId)
         this.projects = this.projects.filter(p => p.id !== data.projectId)
         console.log('✅ [STORE] Proyecto eliminado de la lista')
+        
+        // ✨ MOSTRAR NOTIFICACIÓN
+        if (proyecto) {
+          await notificationService.notifyProjectDeleted(proyecto.nombre)
+        }
       })
 
-      // Miembro agregado
-      socketService.on('project:member:added', (data) => {
+      // ✨ EVENTO: Miembro Agregado
+      socketService.on('project:member:added', async (data) => {
         console.log('📩 [STORE] Miembro agregado recibido:', data)
         
         const proyecto = this.projects.find(p => p.id === data.projectId)
@@ -76,38 +92,72 @@ export const useProjectStore = defineStore('projects', {
           if (!existe) {
             proyecto.proyecto_usuario_rol.push(data.member)
             console.log('✅ [STORE] Miembro agregado al proyecto')
+            
+            // ✨ MOSTRAR NOTIFICACIÓN
+            await notificationService.notifyMemberAdded(
+              data.member.usuario.nombre,
+              data.member.rol.nombre,
+              proyecto.nombre,
+              proyecto.id
+            )
           }
         }
       })
 
-      // Miembro removido
-      socketService.on('project:member:removed', (data) => {
+      // ✨ EVENTO: Miembro Removido
+      socketService.on('project:member:removed', async (data) => {
         console.log('📩 [STORE] Miembro removido recibido:', data)
         
         const proyecto = this.projects.find(p => p.id === data.projectId)
         if (proyecto && proyecto.proyecto_usuario_rol) {
+          const miembro = proyecto.proyecto_usuario_rol.find(
+            m => m.usuario.id === data.userId
+          )
+          
           proyecto.proyecto_usuario_rol = proyecto.proyecto_usuario_rol.filter(
             m => m.usuario.id !== data.userId
           )
           console.log('✅ [STORE] Miembro removido del proyecto')
+          
+          // ✨ MOSTRAR NOTIFICACIÓN
+          if (miembro) {
+            await notificationService.notifyMemberRemoved(
+              miembro.usuario.nombre,
+              proyecto.nombre,
+              proyecto.id
+            )
+          }
         }
       })
 
-      // Te uniste a un nuevo proyecto
-      socketService.on('project:joined', (data) => {
+      // ✨ EVENTO: Te Uniste a un Proyecto
+      socketService.on('project:joined', async (data) => {
         console.log('📩 [STORE] Te uniste a un proyecto:', data)
         
         // Recargar proyectos para obtener el nuevo
         const userId = JSON.parse(localStorage.getItem('user'))?.id
         if (userId && this.projects.length > 0) {
-          this.fetchProjects(userId)
+          await this.fetchProjects(userId)
         }
+        
+        // ✨ MOSTRAR NOTIFICACIÓN
+        await notificationService.notifyJoinedProject(
+          data.projectName,
+          data.projectId
+        )
       })
 
-      // Te removieron de un proyecto
-      socketService.on('project:left', (data) => {
+      // ✨ EVENTO: Te Removieron de un Proyecto
+      socketService.on('project:left', async (data) => {
         console.log('📩 [STORE] Te removieron de un proyecto:', data)
+        
+        const proyecto = this.projects.find(p => p.id === data.projectId)
         this.projects = this.projects.filter(p => p.id !== data.projectId)
+        
+        // ✨ MOSTRAR NOTIFICACIÓN
+        if (proyecto) {
+          await notificationService.notifyLeftProject(proyecto.nombre)
+        }
       })
 
       this.listenersSetup = true
